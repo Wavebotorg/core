@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Template</title>
+    <style>
+        body {
+            background-color: antiquewhite;
+        }
+
+        .container {
+            width: 1000px;
+            text-align: center;
+            margin: auto;
+            margin-top: 100px;
+        }
+
+        .logo {
+            max-width: 100%;
+        }
+
+        .title {
+            font-size: 35px;
+            margin: 30px 0 35px 0;
+            color: rgb(94, 8, 233);
+        }
+
+        .paragraph {
+            font-size: 20px;
+            margin: 20px;
+        }
+
+        .small-text {
+            font-size: 15px;
+        }
+
+        .medium-text {
+            font-size: 25px;
+        }
+
+        .color {
+            color: rgb(68, 6, 240);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img class="logo" src="../upload/Vector.png" alt="logo" />
+        <h1 class="title color">Thanks for signing up to WaveBot</h1>
+        <p class="paragraph">Dear {{username}},</p>
+        <p class="paragraph">Verification Code Below:</p>
+        <h1 class="title color">{{otp}}</h1>
+        <p class="paragraph">DO NOT share your password with anyone. Keep the password for your WaveBot account and
+            the email address used for unique registration secure to ensure your account is protected.</p>
+        <p class="paragraph">Please try and avoid using a common password used for your other accounts. To ensure your
+            account is protected, always keep your Password with letters and numbers combined with special characters.</p>
+        <p class="medium-text">Thanks!</p>
+        <p class="medium-text">Team WaveBot</p>
+        <p class="small-text">Sent With 💖 From Team WaveBot</p>
+        
+    </div>
+</body>
+
+</html>
