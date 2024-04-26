@@ -51,20 +51,29 @@ const userSchema = new mongoose.Schema({
         //required: true,
         // default : "123",
         // unique: true
-      },
+    },
+    role: {
+        type: String,
+        default: "user",
+        enum: ["user", "admin"]
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
     // status: {
     //     type: String,
     //     default: "activate"
     // },
 }, { timestamps: true })
 
-userSchema.plugin(mongooseFieldEncryption, { 
-    fields: ["hashedPrivateKey"], 
+userSchema.plugin(mongooseFieldEncryption, {
+    fields: ["hashedPrivateKey"],
     secret: "code",
     saltGenerator: function (secret) {
-      return "1234567890123456"; 
+        return "1234567890123456";
     },
-  });
+});
 const userModel = mongoose.model('user', userSchema);
 
 module.exports = userModel
