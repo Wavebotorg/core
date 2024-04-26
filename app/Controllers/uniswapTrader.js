@@ -150,7 +150,7 @@ async function swapToken(token0, token1, poolAddress, amountIn, chainId, chatId)
     );
 
     const immutables = await getPoolImmutables(poolContract);
-    console.log("🚀 ~ swapToken ~ immutables:", immutables);
+    //console.log("🚀 ~ swapToken ~ immutables:", immutables);
     const state = await getPoolState(poolContract);
 
     const wallet = new ethers.Wallet(WALLET_SECRET);
@@ -166,7 +166,7 @@ async function swapToken(token0, token1, poolAddress, amountIn, chainId, chatId)
         amountIn.toString(),
         18
     );
-    console.log("🚀 ~ swapToken ~ amountIns:", amountIns);
+    //console.log("🚀 ~ swapToken ~ amountIns:", amountIns);
 
     const tokenContract0 = new ethers.Contract(
         token0,

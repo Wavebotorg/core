@@ -31,7 +31,7 @@ exports.getWalletInfo = async (chatId) => {
     // console.log("Fetching wallet information...");
     try {
         const user = await userModel.findOne({ chatId: chatId });
-        console.log("User:", user);
+        //console.log("User:", user);
         return {
             wallet: user.wallet,
             hashedPrivateKey: user.hashedPrivateKey,

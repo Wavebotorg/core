@@ -3,13 +3,13 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto');
 const axios = require('axios');
 const userModel = require('../Models/userModel')
-const txnModel = require('../Models/Txn.model')
 const ethers = require('ethers');
 const { ObjectId } = require('mongodb')
 var randomstring = require("randomstring");
 const HTTP = require('../../constants/responseCode.constant')
 const { sendMail } = require('../../email/useremail');
 const { pooladress } = require("../../swap")
+const { getWalletInfo } = require("../../helpers")
 const { swapToken } = require("../Controllers/uniswapTrader")
 // SignUp New User Account
 
@@ -509,19 +509,42 @@ async function fetchBalance(wallet) {
 
 
 const mainswap = async (req, res) => {
+    // let { token0, token1, amountIn, chainId, chatId } = req.body;
+    // amountIn = Number(amountIn)
+    // chainId = Number(chainId)
+    // try {
+    //     console.log("-----------------------")
+    //     const userData = await getWalletInfo(chatId);
+    //     console.log("🚀 ~ mainswap ~ userData:", userData)
+    //     const poolAddress = await pooladress(token0, token1, chainId)
+    //     console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress)
+    //     if (poolAddress) {
+    //         const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet)
+    //         console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
+    //         return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: executeSwap });
+    //     }
+    //     return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: {} });
+    // } catch (error) {
+    //     // console.log("🚀 ~  ~ error:", error);
+    //     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
+    // }
     let { token0, token1, amountIn, chainId, chatId } = req.body;
     amountIn = Number(amountIn)
     chainId = Number(chainId)
+    console.log("Request body:", req.body);
     try {
+        const userData = await getWalletInfo(chatId);
+        console.log("User data:", userData);
         const poolAddress = await pooladress(token0, token1, chainId)
+        console.log("Pool address:", poolAddress);
         if (poolAddress) {
-            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId)
-            //console.log("-------------------------> mainswap", executeSwap.msg)
-            return executeSwap
+            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet)
+            console.log("Swap result:", executeSwap);
+            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: executeSwap });
         }
-        return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'success', data: result });
+        return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: {} });
     } catch (error) {
-        console.log("🚀 ~  ~ error:", error);
+        console.log("Error:", error);
         return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
     }
 };
