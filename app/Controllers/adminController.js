@@ -26,8 +26,7 @@ const generateOTP = () => {
     try {
         const admin = {
             name: "Admin",
-            email: "dmeet1008@gmail.com",
-            // email: "mohit@wavebot.app",
+            email: "mohit@wavebot.app",
             password: await bcrypt.hash("admin@123", 10),
             role: "admin",
             verify: true,
@@ -338,7 +337,7 @@ const verifyOTP = async (req, res) => {
         if (!userData) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email or OTP" });
         }
-        const token = jwt.sign({ _id: userData._id }, process.env.SECRET_KEY, { expiresIn: "10m" } )
+        const token = jwt.sign({ _id: userData._id }, process.env.SECRET_KEY, { expiresIn: "10m" })
         if (!token) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Something Went Wrong" });
         return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully", token: token });
         // return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
