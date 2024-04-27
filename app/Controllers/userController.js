@@ -550,10 +550,10 @@ const fetchBalance = async (req, res) => {
                 }
             }
         });
-        res.status(200).json(tokensData); 
+        res.status(200).json(tokensData);
     } catch (error) {
         console.error('Error fetching balance:', error);
-        res.status(500).json({ error: 'Internal Server Error' }); 
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -590,14 +590,18 @@ const mainswap = async (req, res) => {
         console.log("🚀 ~ mainswap ~ chainId:", chainId)
         console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress)
         if (poolAddress) {
-            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet).then(()=>{
-                return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'transaction success', data: executeSwap });
-            }).catch((err)=>{
-                console.log(err)
-                return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err});
-            })
-        }else{
-            return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err});
+            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet)
+            console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
+            if (!executeSwap) return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: {} })
+            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'transaction success', data: executeSwap });
+            // executeSwap.then((result) => {
+            //     console.log("🚀 ~ executeSwap.then ~ result:", result)
+            // }).catch((err) => {
+            //     console.log(err)
+            //     return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err });
+            // })
+        } else {
+            return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err });
         }
     } catch (error) {
         console.log("Error:", error);
