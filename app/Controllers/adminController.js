@@ -361,7 +361,7 @@ const updatePassword = async (req, res) => {
         }
         const token = req.headers.authorization;
         if (!token) {
-            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, message: 'Unauthorized: No token provided' });
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, message: 'Unauthorized' });
         }
 
         // Verify the token
