@@ -58,7 +58,7 @@ const login = async (req, res) => {
 
 const getUpdateProfile = async (req, res) => {
     try {
-        const profile = await userModel.findById(req.user._id).select('-password -googleId -_id -role');
+        const profile = await userModel.findById(req.user._id).select('-password -_id -role');
         if (!profile) return res.status(404).json({ msg: "User Not Found" })
         return res.status(200).json({ msg: profile })
     } catch (error) {
