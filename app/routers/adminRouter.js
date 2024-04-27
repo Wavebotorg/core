@@ -11,7 +11,7 @@ router.get('/', function (req, res, next) {
 });
 
 /* LOGIN */
-router.post("/login", adminController.login)
+router.post("/login", adminController.login);
 
 /* GET UPDATE PROFILE */
 router.get("/getUpdateProfile", authadmin, adminController.getUpdateProfile);
