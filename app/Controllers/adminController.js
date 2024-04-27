@@ -338,8 +338,10 @@ const verifyOTP = async (req, res) => {
         if (!userData) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email or OTP" });
         }
-
-        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
+        const token = jwt.sign({ _id: userData._id }, process.env.SECRET_KEY, { expiresIn: "10m" } )
+        if (!token) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Something Went Wrong" });
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully", token: token });
+        // return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
 
     } catch (error) {
         console.log(error);
@@ -357,15 +359,27 @@ const updatePassword = async (req, res) => {
         if (!email || newPass !== cPass) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Password" });
         }
-        const user = await userModel.findOneAndUpdate(
-            { email, role: 'admin' },
-            { password: await bcrypt.hash(newPass, 10) },
-            { new: true }
-        );
-        if (!user) {
-            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
+        const token = req.headers.authorization;
+        if (!token) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, message: 'Unauthorized: No token provided' });
         }
-        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Password Change Successfully" });
+
+        // Verify the token
+        jwt.verify(token.split(' ')[1], process.env.SECRET_KEY, async (err) => {
+            if (err) {
+                return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.FORBIDDEN, message: 'Forbidden: Invalid token' });
+            }
+            const user = await userModel.findOneAndUpdate(
+                { email, role: 'admin' },
+                { password: await bcrypt.hash(newPass, 10) },
+                { new: true }
+            );
+            if (!user) {
+                return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
+            }
+            return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Password Change Successfully" });
+
+        });
     } catch (error) {
         console.log(error);
         return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
