@@ -116,13 +116,9 @@ const changePassword = async (req, res) => {
 
 const showAllUser = async (req, res) => {
     try {
-
-        let matchStage = {
-            role: "user" // Match users based on the role
-        };
         let userData = await userModel.aggregate([
             {
-                $match: matchStage
+                $match: { role: "user" }
             },
             {
                 $project: {
