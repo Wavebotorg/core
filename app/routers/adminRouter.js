@@ -31,5 +31,13 @@ router.post("/deleteUser/:id", authadmin, adminController.deleteUser);
 /* UPDATE USER STATUS */
 router.get("/updateUserStatus/:userId", authadmin, adminController.updateUserStatus);
 
+/* FORGOT PASSWORD */
+router.post("/forgotPassword", adminController.forgotPassword);
+
+/* VERIFY OTP */
+router.post("/verifyOTP", adminController.verifyOTP);
+
+/* UPDATE PASSWORD */
+router.post("/updatePassword", adminController.updatePassword);
 
 module.exports = router;

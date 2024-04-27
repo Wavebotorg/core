@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 const HTTP = require("../../constants/responseCode.constant")
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -19,10 +20,11 @@ const transporter = nodemailer.createTransport({
 // ============================== Default SignUp =================================
 (async (req, res) => {
     try {
+        const pass = await bcrypt.hash("admin@123", 10)
         const admin = {
             name: "Admin",
             email: "admin@gmail.com",
-            password: "admin@123",
+            password: pass,
             role: "admin",
             verify: true,
         }
@@ -44,7 +46,7 @@ const login = async (req, res) => {
         const { email, password } = req.body;
         const checkEmail = await userModel.findOne({ email: email, role: 'admin' })
         if (!checkEmail) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Invalid Crendtials" });
-        if (checkEmail.password === password) {
+        if (await bcrypt.compare(password, checkEmail.password)) {
             const token = jwt.sign({ _id: checkEmail._id }, process.env.SECRET_KEY)
             if (!token) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Something Went Wrong" });
             return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Success", token: token });
@@ -104,15 +106,15 @@ const changePassword = async (req, res) => {
         const { cuPass, newPass, coPass } = req.body;
         const user = await userModel.findById(req.user._id).select("password");
 
-        if (!user) return res.status(HTTP.SUCCESS).json({status:false,code:HTTP.NOT_FOUND, msg: "User Not Found" });
+        if (!user) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User Not Found" });
 
-        if (cuPass !== user.password) return res.status(HTTP.SUCCESS).json({status:false,code:HTTP.UNAUTHORIZED, msg: "Invalid Credential" });
-        if (cuPass === newPass) return res.status(HTTP.SUCCESS).json({status:false,code:HTTP.UNAUTHORIZED, msg: "Your Current Password and New Password Are the Same" });
-        if (newPass !== coPass) return res.status(HTTP.SUCCESS).json({ status:false,code:HTTP.UNAUTHORIZED,msg: "New Password and Confirmation Password Do Not Match" });
+        if (cuPass !== user.password) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Invalid Credential" });
+        if (cuPass === newPass) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Your Current Password and New Password Are the Same" });
+        if (newPass !== coPass) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "New Password and Confirmation Password Do Not Match" });
         user.password = newPass;
         await user.save();
 
-        return res.status(HTTP.SUCCESS).json({status: true, code: HTTP.SUCCESS, msg: "Password updated successfully" });
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Password updated successfully" });
 
     } catch (error) {
         console.log(error);
@@ -129,10 +131,10 @@ const showAllUser = async (req, res) => {
             { role: "user" }
         ).select('-password -otp -role');
         if (!userData || userData.length === 0) {
-            return res.status(HTTP.SUCCESS).json({ status:false,code:HTTP.NOT_FOUND,msg: "No users found" });
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "No users found" });
         }
 
-        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS,msg: "Here are the users", data: userData });
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Here are the users", data: userData });
     }
     catch (error) {
         console.log(error);
@@ -148,9 +150,9 @@ const deleteUser = async (req, res) => {
 
         const { id } = req.params;
         const userData = await userModel.findById(id);
-        if (!userData) return res.status(HTTP.SUCCESS).json({ status:false,code:HTTP.NOT_FOUND,msg: "User Not Found" });
+        if (!userData) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User Not Found" });
         await userModel.findByIdAndDelete(id);
-        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS,msg: "User deleted successfully" });
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "User deleted successfully" });
 
     } catch (error) {
         console.log(error);
@@ -164,7 +166,7 @@ const deleteUser = async (req, res) => {
 const updateUserStatus = async (req, res) => {
     try {
         const { userId } = req.params;
-        if (!userId) return res.status(HTTP.SUCCESS).json({ status:false,code:HTTP.NOT_FOUND,msg: "Something Went Wrong" });
+        if (!userId) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "Something Went Wrong" });
 
         const user = await userModel.findOneAndUpdate(
             { _id: userId },
@@ -172,7 +174,7 @@ const updateUserStatus = async (req, res) => {
             { new: true }
         ).select("email isActive");
 
-        if (!user) return res.status(HTTP.SUCCESS).json({ status:false,code:HTTP.NOT_FOUND,msg: "User not found" });
+        if (!user) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
 
         const mailOptions = {
             from: "test.project7312@gmail.com",
@@ -186,13 +188,182 @@ const updateUserStatus = async (req, res) => {
             else console.log("Email sent:", info.response);
         });
 
-        res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS,msg: "User Status Updated Successfully", user });
+        res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "User Status Updated Successfully", user });
     } catch (error) {
         console.log(error);
         return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
     }
 }
 
+
+// -------------------------------- Forgot Password User  // Send OTP Email // --------------------------------
+
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email" });
+        const otp = generateOTP();
+        const htmlTemplate = `
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>OTP Email</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+            /* Add your CSS styles here */
+            body {
+                font-family: 'Roboto', sans-serif;
+                background-color: #f0f0f0;
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                display: grid;
+                place-items: center;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 40px;
+                background-color: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0px 10px 20px 0px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+                color: #333333;
+                font-size: 24px;
+                font-weight: 700;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .otp {
+                color: #4caf50;
+                font-size: 48px;
+                font-weight: 700;
+                text-align: center;
+                margin-bottom: 50px;
+                border: 2px solid #4caf50;
+                border-radius: 8px;
+                padding: 20px;
+            }
+            p {
+                color: #666666;
+                font-size: 18px;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            .footer {
+                color: #999999;
+                font-size: 14px;
+                text-align: center;
+                margin-top: 30px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Welcome to Our Service</h1>
+            <p>Your One-Time Password (OTP) for login:</p>
+            <p class="otp">${otp}</p>
+            <p>Please use this OTP to complete your login process.</p>
+            <p class="footer">This email was sent automatically. Please do not reply.</p>
+        </div>
+    </body>
+    </html>
+`;
+
+        const mailOptions = {
+            from: 'test.project7312@gmail.com',
+            to: email,
+            subject: 'Your OTP for Login',
+            html: htmlTemplate
+        };
+
+        // Send email
+        transporter.sendMail(mailOptions, async (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+
+            } else {
+                console.log('Email sent:', info.response);
+                await userModel.findOneAndUpdate({ email: email, role: "admin" }, { otp: otp })
+                return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Sent Successfully" })
+            }
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+
+    }
+}
+
+
+// -------------------------------- Verify OTP User --------------------------------
+
+const verifyOTP = async (req, res) => {
+    try {
+        // const { email } = req.body;
+        // if (!req.body) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid OTP" });
+        // const userData = await userModel.findOne({ email: email, role: 'admin' });
+        // if (!userData) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email" });
+        // if (req.body.otp == userData.otp) {
+        //     await userModel.findOneAndUpdate({ email: email, role: "admin" }, { otp: 0 })
+        //     return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
+        // }
+        // else {
+        //     return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid OTP" });
+        // }
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid OTP" });
+        }
+
+        const userData = await userModel.findOneAndUpdate(
+            { email, role: 'admin', otp },
+            { otp: 0 },
+            { new: true }
+        );  
+
+        if (!userData) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email or OTP" });
+        }
+
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+
+    }
+}
+
+
+// -------------------------------- Update User Password --------------------------------
+
+const updatePassword = async (req, res) => {
+    try {
+        const { email, newPass, cPass } = req.body;
+        if (!email || newPass !== cPass) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Password" });
+        }
+        const user = await userModel.findOneAndUpdate(
+            { email, role: 'admin' },
+            { password: newPass },
+            { new: true }
+        );
+        if (!user) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
+        }
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Password Change Successfully" });
+    } catch (error) {
+        console.log(error);
+        return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+
+    }
+}
 
 module.exports = {
     login,
@@ -201,5 +372,8 @@ module.exports = {
     changePassword,
     showAllUser,
     deleteUser,
-    updateUserStatus
+    updateUserStatus,
+    forgotPassword,
+    verifyOTP,
+    updatePassword,
 }
