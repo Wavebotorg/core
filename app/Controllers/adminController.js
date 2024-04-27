@@ -20,11 +20,10 @@ const transporter = nodemailer.createTransport({
 // ============================== Default SignUp =================================
 (async (req, res) => {
     try {
-        const pass = await bcrypt.hash("admin@123", 10)
         const admin = {
             name: "Admin",
             email: "admin@gmail.com",
-            password: pass,
+            password: await bcrypt.hash("admin@123", 10),
             role: "admin",
             verify: true,
         }
