@@ -25,6 +25,12 @@ router.post("/changePassword", authadmin, adminController.changePassword);
 /* SHOW ALL USER */
 router.get("/showAllUser", authadmin, adminController.showAllUser);
 
+/* SHOW ALL USER */
+router.get("/userCount", authadmin, adminController.getUsersCountByPeriod);
+
+/* SHOW ALL USER */
+router.get("/showUser/:id", authadmin, adminController.showUser);
+
 /* DELETE USER */
 router.post("/deleteUser/:id", authadmin, adminController.deleteUser);
 

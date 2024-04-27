@@ -2,6 +2,7 @@ const userModel = require("../Models/userModel");
 const jwt = require("jsonwebtoken");
 const path = require('path');
 const fs = require('fs');
+const moment = require('moment');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const HTTP = require("../../constants/responseCode.constant")
@@ -15,14 +16,18 @@ const transporter = nodemailer.createTransport({
         pass: 'apis tsfn jznu ajlm'
     }
 });
-
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+};
 
 // ============================== Default SignUp =================================
+
 (async (req, res) => {
     try {
         const admin = {
             name: "Admin",
-            email: "admin@gmail.com",
+            email: "dmeet1008@gmail.com",
+            // email: "mohit@wavebot.app",
             password: await bcrypt.hash("admin@123", 10),
             role: "admin",
             verify: true,
@@ -142,6 +147,25 @@ const showAllUser = async (req, res) => {
 }
 
 
+// -------------------------------- Show Particular User --------------------------------  
+
+const showUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let userData = await userModel.find(
+            { _id: id, role: "user" }
+        ).select('-password -otp -role');
+        if (!userData || userData.length === 0) {
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "No users found" });
+        }
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Here are the users", data: userData });
+    } catch (error) {
+        console.log(error);
+        return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+    }
+}
+
+
 // -------------------------------- Delete User By Admin --------------------------------  
 
 const deleteUser = async (req, res) => {
@@ -191,7 +215,7 @@ const updateUserStatus = async (req, res) => {
 }
 
 
-// -------------------------------- Forgot Password User  // Send OTP Email // --------------------------------
+// -------------------------------- Forgot Password Admin  // Send OTP Email // --------------------------------
 
 const forgotPassword = async (req, res) => {
     try {
@@ -349,15 +373,83 @@ const updatePassword = async (req, res) => {
     }
 }
 
+
+// -------------------------------- User Count By Period --------------------------------
+
+const getUsersCountByPeriod = async (req, res) => {
+    try {
+
+        // user na count 
+
+        const oneWeekAgo = moment().subtract(1, 'week');
+        const oneMonthAgo = moment().subtract(1, 'month');
+        const oneYearAgo = moment().subtract(1, 'year');
+        const oneDayAgo = moment().subtract(1, 'day');
+
+        const usersLastWeek = await userModel.countDocuments({ createdAt: { $gte: oneWeekAgo } });
+        const usersLastMonth = await userModel.countDocuments({ createdAt: { $gte: oneMonthAgo } });
+        const usersLastYear = await userModel.countDocuments({ createdAt: { $gte: oneYearAgo } });
+        const usersLastDay = await userModel.countDocuments({ createdAt: { $gte: oneDayAgo } });
+
+        return res.status(HTTP.SUCCESS).json({
+            status: true,
+            code: HTTP.SUCCESS,
+            lastWeek: usersLastWeek,
+            lastMonth: usersLastMonth,
+            lastYear: usersLastYear,
+            lastDay: usersLastDay
+        });
+
+
+        // user ni details sathe 
+
+        // const oneWeekAgo = moment().subtract(1, 'week');
+        // const oneMonthAgo = moment().subtract(1, 'month');
+        // const oneYearAgo = moment().subtract(1, 'year');
+        // const oneDayAgo = moment().subtract(1, 'day');
+
+        // const usersLastWeek = await userModel.find({ createdAt: { $gte: oneWeekAgo } }).select('-password -otp -role');
+        // const usersLastMonth = await userModel.find({ createdAt: { $gte: oneMonthAgo } }).select('-password -otp -role');
+        // const usersLastYear = await userModel.find({ createdAt: { $gte: oneYearAgo } }).select('-password -otp -role');
+        // const usersLastDay = await userModel.find({ createdAt: { $gte: oneDayAgo } }).select('-password -otp -role');
+
+        // return res.status(HTTP.SUCCESS).json({
+        //     status: true,
+        //     code: HTTP.SUCCESS,
+        //     lastWeek: {
+        //         count: usersLastWeek.length,
+        //         data: usersLastWeek
+        //     },
+        //     lastMonth: {
+        //         count: usersLastMonth.length,
+        //         data: usersLastMonth
+        //     },
+        //     lastYear: {
+        //         count: usersLastYear.length,
+        //         data: usersLastYear
+        //     },
+        //     lastDay: {
+        //         count: usersLastDay.length,
+        //         data: usersLastDay
+        //     }
+        // });
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Internal Server Error" })
+
+    }
+}
 module.exports = {
     login,
     getUpdateProfile,
     updateProfile,
     changePassword,
     showAllUser,
+    showUser,
     deleteUser,
     updateUserStatus,
     forgotPassword,
     verifyOTP,
     updatePassword,
+    getUsersCountByPeriod
 }
