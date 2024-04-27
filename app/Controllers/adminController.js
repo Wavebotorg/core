@@ -116,18 +116,9 @@ const changePassword = async (req, res) => {
 
 const showAllUser = async (req, res) => {
     try {
-        let userData = await userModel.aggregate([
-            {
-                $match: { role: "user" }
-            },
-            {
-                $project: {
-                    password: 0,
-                    otp: 0,
-                    role: 0
-                }
-            }
-        ]);
+        let userData = await userModel.find(
+            { role: "user" } 
+        ).select('-password -otp -role');
         if (!userData || userData.length === 0) {
             return res.status(404).json({ msg: "No users found" });
         }
