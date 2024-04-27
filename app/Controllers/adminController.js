@@ -13,6 +13,8 @@ const transporter = nodemailer.createTransport({
         pass: 'apis tsfn jznu ajlm'
     }
 });
+
+
 // ============================== Default SignUp =================================
 (async (req, res) => {
     try {
@@ -31,6 +33,7 @@ const transporter = nodemailer.createTransport({
     }
 
 })();
+
 
 // -------------------------------- Admin Login --------------------------------  
 
@@ -68,7 +71,7 @@ const getUpdateProfile = async (req, res) => {
 }
 
 
-// -------------------------------- update Profile --------------------------------
+// -------------------------------- Update Profile --------------------------------
 
 const updateProfile = async (req, res) => {
     try {
@@ -93,6 +96,8 @@ const updateProfile = async (req, res) => {
 }
 
 
+// -------------------------------- Change Password --------------------------------
+
 const changePassword = async (req, res) => {
     try {
         const { cuPass, newPass, coPass } = req.body;
@@ -114,6 +119,9 @@ const changePassword = async (req, res) => {
     }
 }
 
+
+// -------------------------------- Show All User--------------------------------  
+
 const showAllUser = async (req, res) => {
     try {
         let userData = await userModel.find(
@@ -130,6 +138,7 @@ const showAllUser = async (req, res) => {
         return res.status(500).json({ msg: "Internal Server Error" })
     }
 }
+
 
 // -------------------------------- Delete User By Admin --------------------------------  
 
@@ -150,6 +159,7 @@ const deleteUser = async (req, res) => {
         return res.status(500).json({ msg: "Internal Server Error" })
     }
 }
+
 
 // -------------------------------- Blocked Or UnBlocked User --------------------------------  
 
@@ -187,6 +197,7 @@ const updateUserStatus = async (req, res) => {
         return res.status(500).json({ msg: "Internal Server Error" })
     }
 }
+
 
 module.exports = {
     login,
