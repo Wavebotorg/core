@@ -115,7 +115,7 @@ const changePassword = async (req, res) => {
         if (cuPass !== user.password) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Invalid Credential" });
         if (cuPass === newPass) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Your Current Password and New Password Are the Same" });
         if (newPass !== coPass) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "New Password and Confirmation Password Do Not Match" });
-        user.password = newPass;
+        user.password = await bcrypt.hash(newPass, 10);
         await user.save();
 
         return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "Password updated successfully" });
@@ -359,7 +359,7 @@ const updatePassword = async (req, res) => {
         }
         const user = await userModel.findOneAndUpdate(
             { email, role: 'admin' },
-            { password: newPass },
+            { password: await bcrypt.hash(newPass, 10) },
             { new: true }
         );
         if (!user) {
