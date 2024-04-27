@@ -167,14 +167,10 @@ const updateUserStatus = async (req, res) => {
     try {
         const { userId } = req.params;
         if (!userId) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "Something Went Wrong" });
-
-        const user = await userModel.findOneAndUpdate(
-            { _id: userId },
-            { $set: { isActive: { $not: "$isActive" } } },
-            { new: true }
-        ).select("email isActive");
-
+        const user = await userModel.findOne({ _id: userId }).select("email isActive");
         if (!user) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
+        user.isActive = !user.isActive;
+        await user.save();
 
         const mailOptions = {
             from: "test.project7312@gmail.com",
@@ -314,7 +310,7 @@ const verifyOTP = async (req, res) => {
             { email, role: 'admin', otp },
             { otp: 0 },
             { new: true }
-        );  
+        );
 
         if (!userData) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email or OTP" });
