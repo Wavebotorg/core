@@ -1,5 +1,3 @@
-
-
 // async function pooladress(token1Address, token2Address) {
 //   const ethers = require('ethers');
 //   // The variables you need to plug in first.// If you dont know how to get these, see the extra info listed under this code snippet.
@@ -16,9 +14,11 @@
 //   return poolAddress
 // };
 
+
+
+const ethers = require('ethers');
 async function pooladress(token1Address, token2Address ,chainId) {
   console.log("🚀 ~************************************************* pooladress ~ chainId:", chainId)
-  const ethers = require('ethers');
   // The variables you need to plug in first.// If you dont know how to get these, see the extra info listed under this code snippet.
   // const token1Address = '0x912CE59144191C1204E64559FE8253a0e49E6548';
   // const token2Address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9';
@@ -39,12 +39,12 @@ async function pooladress(token1Address, token2Address ,chainId) {
     process.exit(1);
   }
   poolBips = 3000;  // 0.3%. This is measured in hundredths of a bipconst 
-  provider = new ethers.providers.JsonRpcProvider(providerUrl);
+  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
   const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, provider);
   const poolAddress = await factoryContract.functions.getPool(token1Address, token2Address, 3000);
-  console.log("poolAddress-------------------->", poolAddress);
   return poolAddress
 };
+
 module.exports = {
   pooladress
 }

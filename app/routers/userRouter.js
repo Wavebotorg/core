@@ -20,7 +20,7 @@ route.get('/recentUsers', authuser, userController.recentUsers);
 route.get('/allWatchlistData', authuser, userController.allWatchList);
 route.post('/removeCoinWatchlist', authuser, userController.removeCoinWatchlist);
 route.post('/verifyPrivateKey', authuser , userController.verifyPrivateKey);
-route.get('/fetchbalance', userController.fetchBalance);
+route.post('/fetchbalance', userController.fetchBalance);
 
 route.post('/balance', authuser  ,coinController.addbalance);
 route.post('/buyCoin', authuser ,  coinController.buy);

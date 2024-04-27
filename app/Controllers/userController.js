@@ -411,8 +411,87 @@ const removeCoinWatchlist = async (req, res) => {
 
 
 // Fatch Balance 
-async function fetchBalance(wallet) {
+// async function fetchBalance(wallet) {
+//     try {
+//         const address = wallet;
+//         const baseURL = "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
+//         const data = {
+//             jsonrpc: "2.0",
+//             method: "alchemy_getTokenBalances",
+//             headers: {
+//                 "Content-Type": "application/json",
+//             },
+//             params: [`${address}`],
+//             id: 42,
+//         };
+//         const config = {
+//             method: "post",
+//             url: baseURL,
+//             headers: {
+//                 "Content-Type": "application/json",
+//             },
+//             data: JSON.stringify(data),
+//         };
+
+
+//         const response = await axios(config);
+//         const balances = response.data.result;
+//         const tokensData = [];
+//         const contractAddresses = balances.tokenBalances
+//             .filter((token) => token.tokenBalance !== 0)
+//             .map((token) => token.contractAddress);
+
+//         const metadataPromises = await contractAddresses.map(async (contractAddress) => {
+//             const options = {
+//                 method: "POST",
+//                 url: baseURL,
+//                 headers: {
+//                     accept: "application/json",
+//                     "content-type": "application/json",
+//                 },
+//                 data: {
+//                     id: 1,
+//                     jsonrpc: "2.0",
+//                     method: "alchemy_getTokenMetadata",
+//                     params: [contractAddress],
+//                 },
+//             };
+//             return axios.request(options);
+//         });
+//         console.log("🚀 ~ metadataPromises ~ metadataPromises:", metadataPromises)
+
+//         const metadataResponses = await Promise.all(metadataPromises);
+
+//         metadataResponses.forEach((metadataResponse, index) => {
+//             const balance = balances?.tokenBalances[index]?.tokenBalance;
+//             if (typeof balance !== "undefined") {
+//                 const metadata = metadataResponse.data;
+//                 if (metadata?.result) {
+//                     const balanceValue = balance / Math.pow(10, metadata.result.decimals);
+//                     const formattedBalance = balanceValue.toFixed(5);
+//                     tokensData.push({
+//                         name: metadata.result.name,
+//                         logo: metadata.result.logo,
+//                         balance: `${formattedBalance}`,
+//                     });
+//                 }
+//             }
+//         });
+//         console.log(tokensData);
+//         return tokensData
+//         // return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'Show Balance', data: tokensData });
+//         // return tokensData;
+//     } catch (error) {
+//         console.error('Error fetching balance:', error);
+//         throw error; // Propagate the error
+//     }
+// }
+
+
+const fetchBalance = async (req, res) => {
+    console.log("=============================== fetch Balance =============================")
     try {
+        const { wallet } = req.body;
         const address = wallet;
         const baseURL = "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
         const data = {
@@ -432,16 +511,13 @@ async function fetchBalance(wallet) {
             },
             data: JSON.stringify(data),
         };
-
-
         const response = await axios(config);
         const balances = response.data.result;
         const tokensData = [];
         const contractAddresses = balances.tokenBalances
             .filter((token) => token.tokenBalance !== 0)
             .map((token) => token.contractAddress);
-
-        const metadataPromises = await contractAddresses.map(async (contractAddress) => {
+        const metadataPromises = contractAddresses.map(async (contractAddress) => {
             const options = {
                 method: "POST",
                 url: baseURL,
@@ -458,10 +534,7 @@ async function fetchBalance(wallet) {
             };
             return axios.request(options);
         });
-        console.log("🚀 ~ metadataPromises ~ metadataPromises:", metadataPromises)
-
         const metadataResponses = await Promise.all(metadataPromises);
-
         metadataResponses.forEach((metadataResponse, index) => {
             const balance = balances?.tokenBalances[index]?.tokenBalance;
             if (typeof balance !== "undefined") {
@@ -477,15 +550,12 @@ async function fetchBalance(wallet) {
                 }
             }
         });
-        console.log(tokensData);
-        return tokensData
-        // return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'Show Balance', data: tokensData });
-        // return tokensData;
+        res.status(200).json(tokensData); 
     } catch (error) {
         console.error('Error fetching balance:', error);
-        throw error; // Propagate the error
+        res.status(500).json({ error: 'Internal Server Error' }); 
     }
-}
+};
 
 
 // async function mainswap(token0, token1, amountIn, chainId, chatId) {
@@ -509,40 +579,26 @@ async function fetchBalance(wallet) {
 
 
 const mainswap = async (req, res) => {
-    // let { token0, token1, amountIn, chainId, chatId } = req.body;
-    // amountIn = Number(amountIn)
-    // chainId = Number(chainId)
-    // try {
-    //     console.log("-----------------------")
-    //     const userData = await getWalletInfo(chatId);
-    //     console.log("🚀 ~ mainswap ~ userData:", userData)
-    //     const poolAddress = await pooladress(token0, token1, chainId)
-    //     console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress)
-    //     if (poolAddress) {
-    //         const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet)
-    //         console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
-    //         return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: executeSwap });
-    //     }
-    //     return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: {} });
-    // } catch (error) {
-    //     // console.log("🚀 ~  ~ error:", error);
-    //     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
-    // }
     let { token0, token1, amountIn, chainId, chatId } = req.body;
     amountIn = Number(amountIn)
     chainId = Number(chainId)
     console.log("Request body:", req.body);
     try {
         const userData = await getWalletInfo(chatId);
-        console.log("User data:", userData);
+        console.log("🚀 ~ mainswap ~ userData:", userData)
         const poolAddress = await pooladress(token0, token1, chainId)
-        console.log("Pool address:", poolAddress);
+        console.log("🚀 ~ mainswap ~ chainId:", chainId)
+        console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress)
         if (poolAddress) {
-            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet)
-            console.log("Swap result:", executeSwap);
-            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: executeSwap });
+            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId , userData.hashedPrivateKey, userData.wallet).then(()=>{
+                return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'transaction success', data: executeSwap });
+            }).catch((err)=>{
+                console.log(err)
+                return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err});
+            })
+        }else{
+            return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err});
         }
-        return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'success', data: {} });
     } catch (error) {
         console.log("Error:", error);
         return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
