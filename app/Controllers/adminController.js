@@ -168,31 +168,28 @@ const updateUserStatus = async (req, res) => {
     try {
         const { userId } = req.params;
         if (!userId) return res.status(401).json({ msg: "Something Went Wrong" });
-        const user = await userModel.findOne({ _id: userId });
+        
+        const user = await userModel.findOneAndUpdate(
+            { _id: userId },
+            { $set: { isActive: { $not: "$isActive" } } },
+            { new: true }
+        ).select("email isActive");
+        
         if (!user) return res.status(401).json({ msg: "User not found" });
-        const newStatus = !user.isActive;
-        const updateStatus = await userModel.findOneAndUpdate({ _id: userId }, { isActive: newStatus }, { new: true });
-        if (!updateStatus) return res.status(401).json({ msg: "Task not Updated" });
-        if (updateStatus) {
-            const mailOptions = {
-                from: 'test.project7312@gmail.com',
-                to: updateStatus.email,
-                subject: `Your are now ${newStatus ? 'Active' : 'DeActive'} by administrator`,
-                // text: "Hello world?", // plain text body
-                html: `<b>You Are ${newStatus ? 'Unblocked' : 'Blocked'}</b>`
-            };
-
-            // Send email
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.error('Error sending email:', error);
-                } else {
-                    console.log('Email sent:', info.response);
-                }
-            });
-            return res.status(200).json({ msg: "User Status Updated Successfully", user: updateStatus })
-        }
-
+        
+        const mailOptions = {
+            from: "test.project7312@gmail.com",
+            to: user.email,
+            subject: `You are now ${user.isActive ? "Active" : "Deactive"} by administrator`,
+            html: `<b>You Are ${user.isActive ? "Unblocked" : "Blocked"}</b>`
+        };
+        
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) console.error("Error sending email:", error);
+            else console.log("Email sent:", info.response);
+        });
+        
+        res.status(200).json({ msg: "User Status Updated Successfully", user });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ msg: "Internal Server Error" })
