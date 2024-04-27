@@ -361,13 +361,13 @@ const updatePassword = async (req, res) => {
         }
         const token = req.headers.authorization;
         if (!token) {
-            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, message: 'Unauthorized' });
+            return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: 'Unauthorized' });
         }
 
         // Verify the token
         jwt.verify(token.split(' ')[1], process.env.SECRET_KEY, async (err) => {
             if (err) {
-                return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.FORBIDDEN, message: 'Forbidden: Invalid token' });
+                return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.FORBIDDEN, msg: 'Forbidden: Invalid token' });
             }
             const user = await userModel.findOneAndUpdate(
                 { email, role: 'admin' },
