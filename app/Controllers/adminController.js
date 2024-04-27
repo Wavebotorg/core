@@ -304,17 +304,6 @@ const forgotPassword = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
     try {
-        // const { email } = req.body;
-        // if (!req.body) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid OTP" });
-        // const userData = await userModel.findOne({ email: email, role: 'admin' });
-        // if (!userData) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid Email" });
-        // if (req.body.otp == userData.otp) {
-        //     await userModel.findOneAndUpdate({ email: email, role: "admin" }, { otp: 0 })
-        //     return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "OTP Verify Successfully" });
-        // }
-        // else {
-        //     return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.UNAUTHORIZED, msg: "Enter Valid OTP" });
-        // }
         const { email, otp } = req.body;
 
         if (!email || !otp) {
