@@ -22,11 +22,12 @@ const transporter = nodemailer.createTransport({
             name: "Admin",
             email: "admin@gmail.com",
             password: "admin@123",
-            role: "admin"
+            role: "admin",
+            verify: true,
         }
         const checkEmail = await userModel.findOne({ email: admin.email })
         if (checkEmail) return;
-        userModel({ name: admin.name, email: admin.email, password: admin.password, role: admin.role }).save()
+        userModel(admin).save();
     } catch (error) {
         console.log(error);
         return res.status(500).json({ msg: "Internal Server Error" })
@@ -125,7 +126,7 @@ const changePassword = async (req, res) => {
 const showAllUser = async (req, res) => {
     try {
         let userData = await userModel.find(
-            { role: "user" } 
+            { role: "user" }
         ).select('-password -otp -role');
         if (!userData || userData.length === 0) {
             return res.status(404).json({ msg: "No users found" });
