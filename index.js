@@ -18,6 +18,7 @@ app.use(passport.initialize());
 app.use(express.json());
 app.use(express.static("emailtemplets"))
 app.use('/', require('./app/routers/userRouter'));
+app.use('/admin', require('./app/routers/adminRouter'));
 
 app.all("*", (req, res) => {
     res.send("URL not found")

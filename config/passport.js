@@ -12,6 +12,7 @@ opts.secretOrKey = process.env.SECRET_KEY;
 
 passport.use(new JwtStrategy(opts, async function (jwt_payload, done) {
     const userdata = await User.findOne({ _id: jwt_payload._id })
+      console.log("🚀 ~ userdata:", userdata)
       if (userdata) {
         return done(null, userdata);
     } else {
