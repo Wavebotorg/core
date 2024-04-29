@@ -131,7 +131,7 @@ const changePassword = async (req, res) => {
 const showAllUser = async (req, res) => {
     try {
         let userData = await userModel.find(
-            { role: "user" }
+            { role: "user", isDeleted: false }
         ).select('-password -otp -role');
         if (!userData || userData.length === 0) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "No users found" });
@@ -173,8 +173,14 @@ const deleteUser = async (req, res) => {
         const { id } = req.params;
         const userData = await userModel.findById(id);
         if (!userData) return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "User Not Found" });
-        await userModel.findByIdAndDelete(id);
-        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "User deleted successfully" });
+        // await userModel.findByIdAndDelete(id);
+        // return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "User deleted successfully" });
+
+        // Soft delete by updating isDeleted field
+        userData.isDeleted = true;
+        await userData.save();
+
+        return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: "User soft deleted successfully" });
 
     } catch (error) {
         console.log(error);
@@ -401,10 +407,33 @@ const getUsersCountByPeriod = async (req, res) => {
 
 
         const userCount = await userModel.countDocuments({ role: "user" });
-        const usersLastWeek = await userModel.countDocuments({ createdAt: { $gte: oneWeekAgo } });
-        const usersLastMonth = await userModel.countDocuments({ createdAt: { $gte: oneMonthAgo } });
-        const usersLastYear = await userModel.countDocuments({ createdAt: { $gte: oneYearAgo } });
-        const usersLastDay = await userModel.countDocuments({ createdAt: { $gte: oneDayAgo } });
+        const usersLastWeek = await userModel.countDocuments({
+            $and: [
+                { createdAt: { $gte: oneWeekAgo } }, // Documents created within the last week
+                { role: 'user' } // Documents with role 'user'
+            ]
+        });
+
+        const usersLastMonth = await userModel.countDocuments({
+            $and: [
+                { createdAt: { $gte: oneMonthAgo } }, // Documents created within the last month
+                { role: 'user' } // Documents with role 'user'
+            ]
+        });
+
+        const usersLastYear = await userModel.countDocuments({
+            $and: [
+                { createdAt: { $gte: oneYearAgo } }, // Documents created within the last year
+                { role: 'user' } // Documents with role 'user'
+            ]
+        });
+
+        const usersLastDay = await userModel.countDocuments({
+            $and: [
+                { createdAt: { $gte: oneDayAgo } }, // Documents created within the last day
+                { role: 'user' } // Documents with role 'user'
+            ]
+        });
 
         return res.status(HTTP.SUCCESS).json({
             status: true,
@@ -424,14 +453,39 @@ const getUsersCountByPeriod = async (req, res) => {
         // const oneYearAgo = moment().subtract(1, 'year');
         // const oneDayAgo = moment().subtract(1, 'day');
 
-        // const usersLastWeek = await userModel.find({ createdAt: { $gte: oneWeekAgo } }).select('-password -otp -role');
-        // const usersLastMonth = await userModel.find({ createdAt: { $gte: oneMonthAgo } }).select('-password -otp -role');
-        // const usersLastYear = await userModel.find({ createdAt: { $gte: oneYearAgo } }).select('-password -otp -role');
-        // const usersLastDay = await userModel.find({ createdAt: { $gte: oneDayAgo } }).select('-password -otp -role');
+        // const userCount = await userModel.countDocuments({ role: "user" });
+        // const usersLastWeek = await userModel.find({ 
+        //     $and: [
+        //         { createdAt: { $gte: oneWeekAgo } }, // Documents created within the last week
+        //         { role: 'user' } // Documents with role 'user'
+        //     ]
+        // }).select('-password -otp -role');
+
+        // const usersLastMonth = await userModel.find({ 
+        //     $and: [
+        //         { createdAt: { $gte: oneMonthAgo } }, // Documents created within the last month
+        //         { role: 'user' } // Documents with role 'user'
+        //     ]
+        // }).select('-password -otp -role');
+
+        // const usersLastYear = await userModel.find({ 
+        //     $and: [
+        //         { createdAt: { $gte: oneYearAgo } }, // Documents created within the last year
+        //         { role: 'user' } // Documents with role 'user'
+        //     ]
+        // }).select('-password -otp -role');
+
+        // const usersLastDay = await userModel.find({ 
+        //     $and: [
+        //         { createdAt: { $gte: oneDayAgo } }, // Documents created within the last day
+        //         { role: 'user' } // Documents with role 'user'
+        //     ]
+        // }).select('-password -otp -role');
 
         // return res.status(HTTP.SUCCESS).json({
         //     status: true,
         //     code: HTTP.SUCCESS,
+        // userCount: userCount,
         //     lastWeek: {
         //         count: usersLastWeek.length,
         //         data: usersLastWeek
