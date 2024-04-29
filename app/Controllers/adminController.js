@@ -399,6 +399,8 @@ const getUsersCountByPeriod = async (req, res) => {
         const oneYearAgo = moment().subtract(1, 'year');
         const oneDayAgo = moment().subtract(1, 'day');
 
+
+        const userCount = await userModel.countDocuments({ role: "user" });
         const usersLastWeek = await userModel.countDocuments({ createdAt: { $gte: oneWeekAgo } });
         const usersLastMonth = await userModel.countDocuments({ createdAt: { $gte: oneMonthAgo } });
         const usersLastYear = await userModel.countDocuments({ createdAt: { $gte: oneYearAgo } });
@@ -407,6 +409,7 @@ const getUsersCountByPeriod = async (req, res) => {
         return res.status(HTTP.SUCCESS).json({
             status: true,
             code: HTTP.SUCCESS,
+            userCount: userCount,
             lastWeek: usersLastWeek,
             lastMonth: usersLastMonth,
             lastYear: usersLastYear,
