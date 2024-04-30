@@ -1,57 +1,110 @@
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
-const crypto = require('crypto');
-const axios = require('axios');
-const userModel = require('../Models/userModel')
-const ethers = require('ethers');
-const { ObjectId } = require('mongodb')
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const axios = require("axios");
+const userModel = require("../Models/userModel");
+const ethers = require("ethers");
+// import bs58 from "bs58";
+// import { Keypair } from "@solana/web3.js";
+const { Keypair } = require("@solana/web3.js");
+const bs58 = require("bs58");
+const { ObjectId } = require("mongodb");
 var randomstring = require("randomstring");
-const HTTP = require('../../constants/responseCode.constant')
-const { sendMail } = require('../../email/useremail');
-const { pooladress } = require("../../swap")
-const { getWalletInfo } = require("../../helpers")
-const { swapToken } = require("../Controllers/uniswapTrader")
+const HTTP = require("../../constants/responseCode.constant");
+const { sendMail } = require("../../email/useremail");
+const { pooladress } = require("../../swap");
+const { getWalletInfo } = require("../../helpers");
+const { swapToken } = require("../Controllers/uniswapTrader");
+const { decrypt } = require("mongoose-field-encryption");
+
+// ========================================= generate solana wallet===============================
+const generateWallet = () => {
+  // Step 1: Generate a new Solana keypair
+  const keypair = Keypair.generate();
+
+  // Step 2: Extract Solana private and public keys
+  const solanaPrivateKey = keypair.secretKey.toString();
+
+  //   const solanaPrivateKey = Buffer.from(solanaPrivateKeyLong).toString("hex");
+  const solanaPublicKey = keypair.publicKey.toString();
+  const solanaAddress = keypair.publicKey.toBase58();
+  return { solanaAddress, solanaPrivateKey, solanaPublicKey };
+};
 // SignUp New User Account
 
 const signUp = async (req, res) => {
-    console.log("=============================== Sign Up =============================", req.body);
-    try {
-        const { name, email, password, confirmPassword, chatId } = req.body
-        console.log("🚀 ~ signUp ~ req.body:", req.body.chatId)
-        if (!name || !email || !password || !confirmPassword) return res.status(HTTP.SUCCESS).send({ status: false, "code": HTTP.NOT_ALLOWED, "message": "All Fields Are Required" })
-        if (!email.includes("@")) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "message": "Email is invalid !", data: {} })
-        const random_Number = randomstring.generate({ length: 4, charset: 'numeric' })
-        const finduser = await userModel.findOne({ email: req.body.email })
-        if (finduser) {
-            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This Email Is Already Existing" })
-        }
-        if (req.body.password == req.body.confirmPassword) {
-            const bpass = await bcrypt.hash(req.body.password, 10)
-            const obj = new userModel({
-                name: name,
-                email: email,
-                password: bpass,
-                otp: random_Number,
-                chatId: chatId
-            })
-            const data = {
-                name: name,
-                email: email,
-                otp: random_Number,
-                //templetpath: "./emailtemplets/otp_template.html"
-            }
-            sendMail(data)
-            let saveData = await obj.save()
-            //delete saveData._doc.otp
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Register Successfully", data: saveData })
-        }
-        else {
-            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Password doesn't match!" })
-        }
-    } catch (error) {
-        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.message })
+  console.log(
+    "=============================== Sign Up =============================",
+    req.body
+  );
+  try {
+    const { name, email, password, confirmPassword, chatId } = req.body;
+    console.log("🚀 ~ signUp ~ req.body:", req.body.chatId);
+    if (!name || !email || !password || !confirmPassword)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_ALLOWED,
+        message: "All Fields Are Required",
+      });
+    if (!email.includes("@"))
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        message: "Email is invalid !",
+        data: {},
+      });
+    const random_Number = randomstring.generate({
+      length: 4,
+      charset: "numeric",
+    });
+    const finduser = await userModel.findOne({ email: req.body.email });
+    if (finduser) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.INTERNAL_SERVER_ERROR,
+        msg: "This Email Is Already Existing",
+      });
     }
-}
+    if (req.body.password == req.body.confirmPassword) {
+      const bpass = await bcrypt.hash(req.body.password, 10);
+      const obj = new userModel({
+        name: name,
+        email: email,
+        password: bpass,
+        otp: random_Number,
+        chatId: chatId,
+      });
+      const data = {
+        name: name,
+        email: email,
+        otp: random_Number,
+        //templetpath: "./emailtemplets/otp_template.html"
+      };
+      sendMail(data);
+      let saveData = await obj.save();
+      //delete saveData._doc.otp
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Register Successfully",
+        data: saveData,
+      });
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Password doesn't match!",
+      });
+    }
+  } catch (error) {
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.message,
+    });
+  }
+};
 
 // const login = async (req, res) => {
 //     console.log("===================== Login =================")
@@ -86,331 +139,632 @@ const signUp = async (req, res) => {
 //     }
 // }
 
-
-
 const login = async (req, res) => {
-    console.log("===================== Login =================")
-    try {
-        const { email, password, chatId } = req.body;
-        console.log("Request Body:", req.body);
-        if (!email || !password) return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, msg: "All Fields Are Required", data: {} });
-        if (!email.includes("@")) return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Email is invalid!", data: {} });
+  console.log("===================== Login =================");
+  try {
+    const { email, password, chatId } = req.body;
+    console.log("Request Body:", req.body);
+    if (!email || !password)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_ALLOWED,
+        msg: "All Fields Are Required",
+        data: {},
+      });
+    if (!email.includes("@"))
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Email is invalid!",
+        data: {},
+      });
 
-        const findUser = await userModel.findOne({ email: email });
-        console.log("Find User:", findUser);
-        if (!findUser) {
-            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Email Does Not Exist" });
-        }
-        if (!findUser.verify) {
-            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Account Not Verified" });
-        }
-        bcrypt.compare(password, findUser.password, async (err, result) => {
-            if (result === true) {
-                const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY);
-                const updatedChatId = chatId || null;
-                console.log("Updated ChatId:", updatedChatId);
-                if (!findUser.chatId) {
-                    findUser.chatId = updatedChatId;
-                    await findUser.save();
-                }
-                return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Login Successfully", token: token });
-            } else {
-                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid Password" });
-            }
-        });
-    } catch (error) {
-        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
+    const findUser = await userModel.findOne({ email: email });
+    console.log("Find User:", findUser);
+    if (!findUser) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.UNAUTHORIZED,
+        msg: "Email Does Not Exist",
+      });
     }
+    if (!findUser.verify) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.UNAUTHORIZED,
+        msg: "Account Not Verified",
+      });
+    }
+    bcrypt.compare(password, findUser.password, async (err, result) => {
+      if (result === true) {
+        const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY);
+        const updatedChatId = chatId || null;
+        console.log("Updated ChatId:", updatedChatId);
+        if (!findUser.chatId) {
+          findUser.chatId = updatedChatId;
+          await findUser.save();
+        }
+
+        return res.status(HTTP.SUCCESS).send({
+          status: true,
+          code: HTTP.SUCCESS,
+          msg: "Login Successfully",
+          token: token,
+        });
+      } else {
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          msg: "Invalid Password",
+        });
+      }
+    });
+  } catch (error) {
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
 };
 
 const verify = async (req, res) => {
-    console.log("===================== Verify =================", req.body)
-    try {
-        const email = req.body.email;
-        const otp = req.body.otp;
-        if (!email) return res.status(HTTP.SUCCESS).send({ status: false, "code": HTTP.NOT_ALLOWED, "msg": "Email Is Required", data: {} })
-        if (!email.includes("@")) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "Email is invalid !", data: {} })
-        const findEmail = await userModel.findOne({ email: email })
-        if (!findEmail) {
-            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "You Are Not Register" })
-        }
-        if (findEmail.otp == otp) {
-            const Update = await userModel.findOneAndUpdate({ email: email }, { verify: true, otp: 0 }, { new: true })
-            if (!Update) {
-                return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong" })
-            }
-            const existingUser = await userModel.findOne({ email: email });
-            if (!existingUser) {
-                return res.status(HTTP.NOT_FOUND).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "User not found", data: {} });
-            }
-            const wallet = ethers.Wallet.createRandom();
-            const walletAddress = wallet.address;
-            const walletPrivateKey = wallet.privateKey;
-            const updatedUser = await userModel.findOneAndUpdate(
-                { email: req.body.email }, {
-                $set: { wallet: walletAddress, hashedPrivateKey: walletPrivateKey }
-            }
-            );
-            console.log("🚀 ~ verify ~ updatedUser:", updatedUser)
-            if (!updatedUser) {
-                return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ "status": false, 'code': HTTP.INTERNAL_SERVER_ERROR, "msg": "Could not save wallet", data: {} });
-            }
-            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'Verify Successfully', data: req.body.types });
-        } else {
-            return res.status(HTTP.BAD_REQUEST).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid OTP. Please enter a valid OTP." })
-        }
-    } catch (error) {
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg })
+  console.log("===================== Verify =================", req.body);
+  try {
+    const email = req.body.email;
+    const otp = req.body.otp;
+    if (!email)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_ALLOWED,
+        msg: "Email Is Required",
+        data: {},
+      });
+    if (!email.includes("@"))
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Email is invalid !",
+        data: {},
+      });
+    const findEmail = await userModel.findOne({ email: email });
+    if (!findEmail) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "You Are Not Register",
+      });
     }
-}
+    if (findEmail.otp == otp) {
+      const Update = await userModel.findOneAndUpdate(
+        { email: email },
+        { verify: true, otp: 0 },
+        { new: true }
+      );
+      if (!Update) {
+        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+          status: false,
+          code: HTTP.INTERNAL_SERVER_ERROR,
+          msg: "Something Went Wrong",
+        });
+      }
+      const existingUser = await userModel.findOne({ email: email });
+      if (!existingUser) {
+        return res.status(HTTP.NOT_FOUND).send({
+          status: false,
+          code: HTTP.NOT_FOUND,
+          msg: "User not found",
+          data: {},
+        });
+      }
+      const wallet = ethers.Wallet.createRandom();
+      const walletAddress = wallet.address;
+      const walletPrivateKey = wallet.privateKey;
+      const { solanaAddress, solanaPrivateKey, solanaPublicKey } =
+        generateWallet();
 
-const resendOTP = async (req, res) => {
-    try {
-        const finduser = await userModel.findOne({ email: req.body.email })
-        const random_Number = randomstring.generate({ length: 4, charset: 'numeric' })
-        if (req.body.types == "signup" && finduser.verify === true) {
-            return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "User Is Already Verified", data: {} })
+      const updatedUser = await userModel.findOneAndUpdate(
+        { email: req.body.email },
+        {
+          $set: {
+            wallet: walletAddress,
+            hashedPrivateKey: walletPrivateKey,
+            solanaPK: solanaPrivateKey,
+            solanawallet: solanaAddress,
+          },
+        },
+        {
+          new: true,
         }
-        if (!finduser) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "Unable To Find User!", data: {} })
-        if (finduser.email) {
-            const obj = new userModel({
-                email: req.body.email,
-                otp: random_Number
-
-            })
-            const data = {
-                email: req.body.email,
-                otp: random_Number,
-                templetpath: "./emailtemplets/otp_template.html"
-            }
-            sendMail(data)
-            await userModel.findOneAndUpdate({ email: req.body.email }, { otp: random_Number }, { new: true })
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Sent OTP Successfully" })
-        } else {
-            return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "Unable to send OTP!", data: {} })
-        }
+      );
+      console.log("🚀 ~ verify ~ updatedUser:", updatedUser);
+      if (!updatedUser) {
+        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+          status: false,
+          code: HTTP.INTERNAL_SERVER_ERROR,
+          msg: "Could not save wallet",
+          data: {},
+        });
+      }
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Verify Successfully",
+        data: req.body.types,
+      });
+    } else {
+      return res.status(HTTP.BAD_REQUEST).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Invalid OTP. Please enter a valid OTP.",
+      });
     }
-    catch (error) {
-        console.log("🚀 ~ file: userController.js:108 ~ verify ~ error.msg:", error)
-        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg })
-    }
-}
-
-const ForgetPassword = async (req, res) => {
-    console.log("===================== Forget Password =================",)
-    try {
-        const finduser = await userModel.findOne({ email: req.body.email })
-        const random_Number = randomstring.generate({ length: 4, charset: 'numeric' })
-        if (!finduser) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "Unable To Find User!", data: {} })
-        if (finduser.email) {
-            const obj = new userModel({
-                email: req.body.email,
-                otp: random_Number
-            })
-            const data = {
-                email: req.body.email,
-                otp: random_Number,
-                templetpath: "./emailtemplets/otp_template.html"
-            }
-            sendMail(data)
-            await userModel.findOneAndUpdate({ email: req.body.email }, { otp: random_Number }, { new: true })
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Sent OTP Successfully" })
-        } else {
-            return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.BAD_REQUEST, "msg": "Unable to send OTP!", data: {} })
-        }
-    }
-    catch (error) {
-        console.log("🚀 ~ file: userController.js:108 ~ verify ~ error.msg:", error)
-        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg })
-    }
-}
-
-const resetPassword = async (req, res) => {
-    console.log("=============================== reset password =============================")
-    try {
-        const findUser = await userModel.findOne({ email: req.body.email });
-        if (req.body)
-            if (findUser) {
-                const password = req.body.newPassword;
-                const confirmPassword = req.body.confirmPassword;
-                if (password === confirmPassword) {
-                    const hashedPassword = await bcrypt.hash(password, 10);
-                    await userModel.findOneAndUpdate({ email: req.body.email }, { password: hashedPassword }, { new: true });
-                    return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Your Password Is Reset" });
-                } else {
-                    return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Password and confirmPassword Do Not Match" });
-                }
-            } else {
-                return res.status(HTTP.NOT_FOUND).send({ status: false, code: HTTP.NOT_FOUND, msg: "User not found with the provided email" });
-            }
-    } catch (error) {
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
-    }
+  } catch (error) {
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
 };
 
+const resendOTP = async (req, res) => {
+  try {
+    const finduser = await userModel.findOne({ email: req.body.email });
+    const random_Number = randomstring.generate({
+      length: 4,
+      charset: "numeric",
+    });
+    if (req.body.types == "signup" && finduser.verify === true) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "User Is Already Verified",
+        data: {},
+      });
+    }
+    if (!finduser)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Unable To Find User!",
+        data: {},
+      });
+    if (finduser.email) {
+      const obj = new userModel({
+        email: req.body.email,
+        otp: random_Number,
+      });
+      const data = {
+        email: req.body.email,
+        otp: random_Number,
+        templetpath: "./emailtemplets/otp_template.html",
+      };
+      sendMail(data);
+      await userModel.findOneAndUpdate(
+        { email: req.body.email },
+        { otp: random_Number },
+        { new: true }
+      );
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Sent OTP Successfully",
+      });
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Unable to send OTP!",
+        data: {},
+      });
+    }
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: userController.js:108 ~ verify ~ error.msg:",
+      error
+    );
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
+};
+
+const ForgetPassword = async (req, res) => {
+  console.log("===================== Forget Password =================");
+  try {
+    const finduser = await userModel.findOne({ email: req.body.email });
+    const random_Number = randomstring.generate({
+      length: 4,
+      charset: "numeric",
+    });
+    if (!finduser)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Unable To Find User!",
+        data: {},
+      });
+    if (finduser.email) {
+      const obj = new userModel({
+        email: req.body.email,
+        otp: random_Number,
+      });
+      const data = {
+        email: req.body.email,
+        otp: random_Number,
+        templetpath: "./emailtemplets/otp_template.html",
+      };
+      sendMail(data);
+      await userModel.findOneAndUpdate(
+        { email: req.body.email },
+        { otp: random_Number },
+        { new: true }
+      );
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Sent OTP Successfully",
+      });
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Unable to send OTP!",
+        data: {},
+      });
+    }
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: userController.js:108 ~ verify ~ error.msg:",
+      error
+    );
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  console.log(
+    "=============================== reset password ============================="
+  );
+  try {
+    const findUser = await userModel.findOne({ email: req.body.email });
+    if (req.body)
+      if (findUser) {
+        const password = req.body.newPassword;
+        const confirmPassword = req.body.confirmPassword;
+        if (password === confirmPassword) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          await userModel.findOneAndUpdate(
+            { email: req.body.email },
+            { password: hashedPassword },
+            { new: true }
+          );
+          return res.status(HTTP.SUCCESS).send({
+            status: true,
+            code: HTTP.SUCCESS,
+            msg: "Your Password Is Reset",
+          });
+        } else {
+          return res.status(HTTP.SUCCESS).send({
+            status: false,
+            code: HTTP.BAD_REQUEST,
+            msg: "Password and confirmPassword Do Not Match",
+          });
+        }
+      } else {
+        return res.status(HTTP.NOT_FOUND).send({
+          status: false,
+          code: HTTP.NOT_FOUND,
+          msg: "User not found with the provided email",
+        });
+      }
+  } catch (error) {
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
+};
 
 async function getData() {
-    console.log("=============================== update watchlist with API data =============================");
-    try {
-        // Make a request to the CoinGecko API
-        const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-            params: {
-                vs_currency: 'USD',
-                order: 'market_cap_desc',
-                per_page: 250,
-                page: 1,
-                sparkline: false,
-                locale: 'en',
-            },
-        });
-        //console.log("🚀 ~ getData ~ response:", response)
-        return response.data;
-    } catch (error) {
-        console.error('Error updating watchlist with API data:', error);
-    }
+  console.log(
+    "=============================== update watchlist with API data ============================="
+  );
+  try {
+    // Make a request to the CoinGecko API
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/coins/markets",
+      {
+        params: {
+          vs_currency: "USD",
+          order: "market_cap_desc",
+          per_page: 250,
+          page: 1,
+          sparkline: false,
+          locale: "en",
+        },
+      }
+    );
+    //console.log("🚀 ~ getData ~ response:", response)
+    return response.data;
+  } catch (error) {
+    console.error("Error updating watchlist with API data:", error);
+  }
 }
 
 const watchList = async (req, res) => {
-    //console.log("=============================== watchList  =============================");
-    try {
-        const { coinId } = req.body;
-        const AlreadyCoin = await userModel.findOne({ email: req.user.email, watchlist: coinId });
-        if (AlreadyCoin) {
-            return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "This Coin Is Alrady In Watchlist !", data: {} })
-        }
-        await userModel.findOneAndUpdate({ email: req.user.email }, { $push: { watchlist: coinId } }, { new: true });
-        return res.json({ success: true, msg: 'Coin added to watchlist successfully' });
-    } catch (error) {
-        console.error("Error in watchList:", error);
-        return res.status(500).json({ success: false, msg: 'Something went wrong', error: error.msg });
+  //console.log("=============================== watchList  =============================");
+  try {
+    const { coinId } = req.body;
+    const AlreadyCoin = await userModel.findOne({
+      email: req.user.email,
+      watchlist: coinId,
+    });
+    if (AlreadyCoin) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "This Coin Is Alrady In Watchlist !",
+        data: {},
+      });
     }
+    await userModel.findOneAndUpdate(
+      { email: req.user.email },
+      { $push: { watchlist: coinId } },
+      { new: true }
+    );
+    return res.json({
+      success: true,
+      msg: "Coin added to watchlist successfully",
+    });
+  } catch (error) {
+    console.error("Error in watchList:", error);
+    return res
+      .status(500)
+      .json({ success: false, msg: "Something went wrong", error: error.msg });
+  }
 };
 
 //get user profile
 async function getUserProfile(req, res) {
-    try {
-        let result = await userModel.findById(req.user.id)
-        if (!result) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "Record not found", data: {} })
-        //return res.status(HTTP.SUCCESS).send({ "status": true, 'code': HTTP.SUCCESS, "msg": "User Profile", data: { email: result.email, name: result.name } });
-        return res.status(HTTP.SUCCESS).send({ "status": true, 'code': HTTP.SUCCESS, "msg": "User Profile", data: result });
-    } catch (err) {
-        console.log(err.msg)
-        return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.INTERNAL_SERVER_ERROR, "msg": "Something went wrong!", data: {} })
-    }
+  try {
+    let result = await userModel.findById(req.user.id);
+    if (!result)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "Record not found",
+        data: {},
+      });
+    //return res.status(HTTP.SUCCESS).send({ "status": true, 'code': HTTP.SUCCESS, "msg": "User Profile", data: { email: result.email, name: result.name } });
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "User Profile",
+      data: result,
+    });
+  } catch (err) {
+    console.log(err.msg);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 }
 
 // connect wallet
 
 async function addWallet(req, res) {
-    try {
-        const existingUser = await userModel.findOne({ _id: req.user.id });
-        console.log("🚀 ~ addWallet ~ existingUser:", existingUser)
-        if (!existingUser) {
-            return res.status(HTTP.NOT_FOUND).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "User not found", data: {} });
-        }
-        const wallet = ethers.Wallet.createRandom();
-        const walletAddress = wallet.address;
-        const walletPrivateKey = wallet.privateKey;
-        const hashedPrivateKey = crypto.createHash('sha256').update(walletPrivateKey).digest('hex');
-        const updatedUser = await userModel.findOneAndUpdate(
-            { _id: req.user.id },
-            { wallet: walletAddress, hashedPrivateKey: walletPrivateKey },
-            { new: true }
-        );
-        if (!updatedUser) {
-            return res.status(HTTP.NOT_FOUND).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "Could not save wallet", data: {} });
-        }
-        return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'Wallet added.', data: {} });
-    } catch (error) {
-        console.error(error);
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ "status": false, 'code': HTTP.INTERNAL_SERVER_ERROR, "msg": "Something went wrong!", data: {} });
+  try {
+    const existingUser = await userModel.findOne({ _id: req.user.id });
+    console.log("🚀 ~ addWallet ~ existingUser:", existingUser);
+    if (!existingUser) {
+      return res.status(HTTP.NOT_FOUND).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "User not found",
+        data: {},
+      });
     }
+    const wallet = ethers.Wallet.createRandom();
+    const walletAddress = wallet.address;
+    const walletPrivateKey = wallet.privateKey;
+    const hashedPrivateKey = crypto
+      .createHash("sha256")
+      .update(walletPrivateKey)
+      .digest("hex");
+    const updatedUser = await userModel.findOneAndUpdate(
+      { _id: req.user.id },
+      { wallet: walletAddress, hashedPrivateKey: walletPrivateKey },
+      { new: true }
+    );
+    if (!updatedUser) {
+      return res.status(HTTP.NOT_FOUND).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "Could not save wallet",
+        data: {},
+      });
+    }
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "Wallet added.",
+      data: {},
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 }
 
 async function verifyPrivateKey(req, res) {
-    try {
-        const { privateKey } = req.body;
-        const user = await userModel.findById(req.user.id);
-        if (!user) {
-            return res.status(HTTP.NOT_FOUND).json({ status: false, code: HTTP.NOT_FOUND, msg: 'User not found' });
-        }
-        const decryptedPrivateKey = crypto.createHash('sha256').update(privateKey).digest('hex');
-        if (decryptedPrivateKey === user.hashedPrivateKey) {
-            return res.status(HTTP.SUCCESS).json({ status: true, code: HTTP.SUCCESS, msg: 'Private key verified successfully', decryptedPrivateKey });
-        } else {
-            return res.status(HTTP.UNAUTHORIZED).json({ status: false, code: HTTP.UNAUTHORIZED, msg: 'Incorrect private key' });
-        }
-    } catch (error) {
-        console.error(error);
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).json({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: 'Something went wrong' });
+  try {
+    const { privateKey } = req.body;
+    const user = await userModel.findById(req.user.id);
+    if (!user) {
+      return res
+        .status(HTTP.NOT_FOUND)
+        .json({ status: false, code: HTTP.NOT_FOUND, msg: "User not found" });
     }
+    const decryptedPrivateKey = crypto
+      .createHash("sha256")
+      .update(privateKey)
+      .digest("hex");
+    if (decryptedPrivateKey === user.hashedPrivateKey) {
+      return res.status(HTTP.SUCCESS).json({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Private key verified successfully",
+        decryptedPrivateKey,
+      });
+    } else {
+      return res.status(HTTP.UNAUTHORIZED).json({
+        status: false,
+        code: HTTP.UNAUTHORIZED,
+        msg: "Incorrect private key",
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong",
+    });
+  }
 }
 
 // Recent Join
 async function recentUsers(req, res) {
-    try {
-        const newusers = await userModel.find({}).sort({ createdAt: -1 }).limit(10)
-        let newuser = [];
-        for (data of newusers) {
-            newuser.push({ name: data.name, email: data.email, createdAt: data.createdAt })
-        }
-        if (!newusers) return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.NOT_FOUND, "msg": "users not found!", data: {} })
-        return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'recently joined users!.', data: newuser })
-
-    } catch (error) {
-        console.log("🚀 ~ recentUsers ~ error:", error)
-        return res.status(HTTP.SUCCESS).send({ "status": false, 'code': HTTP.INTERNAL_SERVER_ERROR, "msg": "Something went wrong!", data: {} })
+  try {
+    const newusers = await userModel.find({}).sort({ createdAt: -1 }).limit(10);
+    let newuser = [];
+    for (data of newusers) {
+      newuser.push({
+        name: data.name,
+        email: data.email,
+        createdAt: data.createdAt,
+      });
     }
+    if (!newusers)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "users not found!",
+        data: {},
+      });
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "recently joined users!.",
+      data: newuser,
+    });
+  } catch (error) {
+    console.log("🚀 ~ recentUsers ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 }
 
 // Get All WatchList
 async function allWatchList(req, res) {
-    //console.log("=============================== All WatchList  =============================");
-    try {
-        //let datas = await getData()
-        const newusers = await userModel.findById(req.user._id);
-        // let alldata = [];
-        // for (d of datas) {
-        //     for (j of newusers.watchlist) {
-        //         if (d.id == j) {
-        //             alldata.push(d)
-        //         }
-        //     }
-        // }
-        // const commonElements = datas.filter(element => newusers.watchlist.includes(element.id));
-        // const filterdata = datas.filter((abc) => {
-        //     if (abc)
-        //         return newusers.watchlist.includes(abc.id)
-        // })
-        // console.log("🚀 ~ filterdata ~ filterdata:", filterdata)
-        return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'All WatchList Data Show.', data: newusers.watchlist.reverse() });
-    } catch (error) {
-        console.log("🚀 ~ allWatchList ~ error:", error);
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ "status": false, 'code': HTTP.INTERNAL_SERVER_ERROR, "msg": "Something went wrong!", data: {} });
-    }
+  //console.log("=============================== All WatchList  =============================");
+  try {
+    //let datas = await getData()
+    const newusers = await userModel.findById(req.user._id);
+    // let alldata = [];
+    // for (d of datas) {
+    //     for (j of newusers.watchlist) {
+    //         if (d.id == j) {
+    //             alldata.push(d)
+    //         }
+    //     }
+    // }
+    // const commonElements = datas.filter(element => newusers.watchlist.includes(element.id));
+    // const filterdata = datas.filter((abc) => {
+    //     if (abc)
+    //         return newusers.watchlist.includes(abc.id)
+    // })
+    // console.log("🚀 ~ filterdata ~ filterdata:", filterdata)
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "All WatchList Data Show.",
+      data: newusers.watchlist.reverse(),
+    });
+  } catch (error) {
+    console.log("🚀 ~ allWatchList ~ error:", error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 }
 
 const removeCoinWatchlist = async (req, res) => {
-    try {
-        console.log("==============================removeCoinWatchlist=============================");
-        const updatedUser = await userModel.findOneAndUpdate(
-            { _id: req.user._id },
-            { $pull: { watchlist: req.body.coinId } },
-            { new: true }
-        );
-        if (updatedUser) {
-            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'Coin removed from Watchlist successfully.', data: updatedUser.watchlist });
-        } else {
-            return res.status(HTTP.NOT_FOUND).send({ 'status': false, 'code': HTTP.NOT_FOUND, 'msg': 'User not found or coin not in Watchlist.', data: {} });
-        }
-    } catch (error) {
-        console.log("🚀 ~ removeCoinWatchlist ~ error:", error);
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
+  try {
+    console.log(
+      "==============================removeCoinWatchlist============================="
+    );
+    const updatedUser = await userModel.findOneAndUpdate(
+      { _id: req.user._id },
+      { $pull: { watchlist: req.body.coinId } },
+      { new: true }
+    );
+    if (updatedUser) {
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Coin removed from Watchlist successfully.",
+        data: updatedUser.watchlist,
+      });
+    } else {
+      return res.status(HTTP.NOT_FOUND).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "User not found or coin not in Watchlist.",
+        data: {},
+      });
     }
+  } catch (error) {
+    console.log("🚀 ~ removeCoinWatchlist ~ error:", error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 };
 
-
-// Fatch Balance 
+// Fatch Balance
 // async function fetchBalance(wallet) {
 //     try {
 //         const address = wallet;
@@ -432,7 +786,6 @@ const removeCoinWatchlist = async (req, res) => {
 //             },
 //             data: JSON.stringify(data),
 //         };
-
 
 //         const response = await axios(config);
 //         const balances = response.data.result;
@@ -487,76 +840,77 @@ const removeCoinWatchlist = async (req, res) => {
 //     }
 // }
 
-
 const fetchBalance = async (req, res) => {
-    console.log("=============================== fetch Balance =============================")
-    try {
-        const { wallet } = req.body;
-        const address = wallet;
-        const baseURL = "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
-        const data = {
-            jsonrpc: "2.0",
-            method: "alchemy_getTokenBalances",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            params: [`${address}`],
-            id: 42,
-        };
-        const config = {
-            method: "post",
-            url: baseURL,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            data: JSON.stringify(data),
-        };
-        const response = await axios(config);
-        const balances = response.data.result;
-        const tokensData = [];
-        const contractAddresses = balances.tokenBalances
-            .filter((token) => token.tokenBalance !== 0)
-            .map((token) => token.contractAddress);
-        const metadataPromises = contractAddresses.map(async (contractAddress) => {
-            const options = {
-                method: "POST",
-                url: baseURL,
-                headers: {
-                    accept: "application/json",
-                    "content-type": "application/json",
-                },
-                data: {
-                    id: 1,
-                    jsonrpc: "2.0",
-                    method: "alchemy_getTokenMetadata",
-                    params: [contractAddress],
-                },
-            };
-            return axios.request(options);
-        });
-        const metadataResponses = await Promise.all(metadataPromises);
-        metadataResponses.forEach((metadataResponse, index) => {
-            const balance = balances?.tokenBalances[index]?.tokenBalance;
-            if (typeof balance !== "undefined") {
-                const metadata = metadataResponse.data;
-                if (metadata?.result) {
-                    const balanceValue = balance / Math.pow(10, metadata.result.decimals);
-                    const formattedBalance = balanceValue.toFixed(5);
-                    tokensData.push({
-                        name: metadata.result.name,
-                        logo: metadata.result.logo,
-                        balance: `${formattedBalance}`,
-                    });
-                }
-            }
-        });
-        res.status(200).json(tokensData);
-    } catch (error) {
-        console.error('Error fetching balance:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+  console.log(
+    "=============================== fetch Balance ============================="
+  );
+  try {
+    const { wallet } = req.body;
+    const address = wallet;
+    const baseURL =
+      "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
+    const data = {
+      jsonrpc: "2.0",
+      method: "alchemy_getTokenBalances",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      params: [`${address}`],
+      id: 42,
+    };
+    const config = {
+      method: "post",
+      url: baseURL,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify(data),
+    };
+    const response = await axios(config);
+    const balances = response.data.result;
+    const tokensData = [];
+    const contractAddresses = balances.tokenBalances
+      .filter((token) => token.tokenBalance !== 0)
+      .map((token) => token.contractAddress);
+    const metadataPromises = contractAddresses.map(async (contractAddress) => {
+      const options = {
+        method: "POST",
+        url: baseURL,
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        data: {
+          id: 1,
+          jsonrpc: "2.0",
+          method: "alchemy_getTokenMetadata",
+          params: [contractAddress],
+        },
+      };
+      return axios.request(options);
+    });
+    const metadataResponses = await Promise.all(metadataPromises);
+    metadataResponses.forEach((metadataResponse, index) => {
+      const balance = balances?.tokenBalances[index]?.tokenBalance;
+      if (typeof balance !== "undefined") {
+        const metadata = metadataResponse.data;
+        if (metadata?.result) {
+          const balanceValue = balance / Math.pow(10, metadata.result.decimals);
+          const formattedBalance = balanceValue.toFixed(5);
+          tokensData.push({
+            name: metadata.result.name,
+            logo: metadata.result.logo,
+            balance: `${formattedBalance}`,
+          });
+        }
+      }
+    });
+    res.status(200).json(tokensData);
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
-
 
 // async function mainswap(token0, token1, amountIn, chainId, chatId) {
 //     try {
@@ -577,54 +931,82 @@ const fetchBalance = async (req, res) => {
 //     }
 // }
 
-
 const mainswap = async (req, res) => {
-    let { token0, token1, amountIn, chainId, chatId } = req.body;
-    amountIn = Number(amountIn)
-    chainId = Number(chainId)
-    console.log("Request body:", req.body);
-    try {
-        const userData = await getWalletInfo(chatId);
-        console.log("🚀 ~ mainswap ~ userData:", userData)
-        const poolAddress = await pooladress(token0, token1, chainId)
-        console.log("🚀 ~ mainswap ~ chainId:", chainId)
-        console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress)
-        if (poolAddress) {
-            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet)
-            console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
-            if (!executeSwap) return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: {} })
-            return res.status(HTTP.SUCCESS).send({ 'status': true, 'code': HTTP.SUCCESS, 'msg': 'transaction success', data: executeSwap });
-            // executeSwap.then((result) => {
-            //     console.log("🚀 ~ executeSwap.then ~ result:", result)
-            // }).catch((err) => {
-            //     console.log(err)
-            //     return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err });
-            // })
-        } else {
-            return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err });
-        }
-    } catch (error) {
-        console.log("Error:", error);
-        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ 'status': false, 'code': HTTP.INTERNAL_SERVER_ERROR, 'msg': 'Something went wrong!', data: {} });
+  let { token0, token1, amountIn, chainId, chatId } = req.body;
+  amountIn = Number(amountIn);
+  chainId = Number(chainId);
+  console.log("Request body:", req.body);
+  try {
+    const userData = await getWalletInfo(chatId);
+    console.log("🚀 ~ mainswap ~ userData:", userData);
+    const poolAddress = await pooladress(token0, token1, chainId);
+    console.log("🚀 ~ mainswap ~ chainId:", chainId);
+    console.log("🚀 ~ mainswap ~ poolAddress:", poolAddress);
+    if (poolAddress) {
+      const executeSwap = await swapToken(
+        token0,
+        token1,
+        poolAddress[0],
+        amountIn,
+        chainId,
+        chatId,
+        userData.hashedPrivateKey,
+        userData.wallet
+      );
+      console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap);
+      if (!executeSwap)
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.SUCCESS,
+          msg: "transaction failed !",
+          data: {},
+        });
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "transaction success",
+        data: executeSwap,
+      });
+      // executeSwap.then((result) => {
+      //     console.log("🚀 ~ executeSwap.then ~ result:", result)
+      // }).catch((err) => {
+      //     console.log(err)
+      //     return res.status(HTTP.SUCCESS).send({ 'status': false, 'code': HTTP.SUCCESS, 'msg': 'transaction failed !', data: err });
+      // })
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.SUCCESS,
+        msg: "transaction failed !",
+        data: err,
+      });
     }
+  } catch (error) {
+    console.log("Error:", error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
 };
 
-
 module.exports = {
-    signUp,
-    login,
-    verify,
-    resendOTP,
-    ForgetPassword,
-    resetPassword,
-    getUserProfile,
-    watchList,
-    allWatchList,
-    removeCoinWatchlist,
-    addWallet,
-    verifyPrivateKey,
-    recentUsers,
-    fetchBalance,
-    mainswap,
-    //getWalletInfo,
-} 
+  signUp,
+  login,
+  verify,
+  resendOTP,
+  ForgetPassword,
+  resetPassword,
+  getUserProfile,
+  watchList,
+  allWatchList,
+  removeCoinWatchlist,
+  addWallet,
+  verifyPrivateKey,
+  recentUsers,
+  fetchBalance,
+  mainswap,
+  //getWalletInfo,
+};

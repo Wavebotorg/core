@@ -1,83 +1,101 @@
-const mongoose = require('mongoose');
-const mongooseFieldEncryption = require("mongoose-field-encryption").fieldEncryption;
+const mongoose = require("mongoose");
+const mongooseFieldEncryption =
+  require("mongoose-field-encryption").fieldEncryption;
 
-
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        require: true
+      type: String,
+      require: true,
     },
     email: {
-        type: String,
-        require: true,
-        lowercase: true,
+      type: String,
+      require: true,
+      lowercase: true,
     },
     password: {
-        type: String,
-        require: true
+      type: String,
+      require: true,
     },
     verify: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
     otp: {
-        type: String,
-        default: 0
+      type: String,
+      default: 0,
     },
     walletAddress: {
-        type: String,
+      type: String,
     },
     watchlist: {
-        type: Array,
-        required: true
+      type: Array,
+      required: true,
     },
     balance: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
     wallet: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
     },
     hashedPrivateKey: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
+    },
+    solanawallet: {
+      type: String,
+      required: false,
+    },
+    solanaPK: {
+      type: String,
+      required: false,
     },
     token: {
-        type: String
+      type: String,
     },
     chatId: {
-        type: Number,
-        //required: true,
-        // default : "123",
-        // unique: true
+      type: Number,
+      //required: true,
+      // default : "123",
+      // unique: true
     },
     role: {
-        type: String,
-        default: "user",
-        enum: ["user", "admin"]
+      type: String,
+      default: "user",
+      enum: ["user", "admin"],
     },
     isActive: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
-    isDeleted:{
-        type: Boolean,
-        default: false
-    }
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     // status: {
     //     type: String,
     //     default: "activate"
     // },
-}, { timestamps: true })
+  },
+  { timestamps: true }
+);
 
 userSchema.plugin(mongooseFieldEncryption, {
-    fields: ["hashedPrivateKey"],
-    secret: "code",
-    saltGenerator: function (secret) {
-        return "1234567890123456";
-    },
+  fields: ["hashedPrivateKey"],
+  secret: "code",
+  saltGenerator: function (secret) {
+    return "1234567890123456";
+  },
 });
-const userModel = mongoose.model('user', userSchema);
+userSchema.plugin(mongooseFieldEncryption, {
+  fields: ["solanaPK"],
+  secret: "code",
+  saltGenerator: function (secret) {
+    return "1234567890123456";
+  },
+});
+const userModel = mongoose.model("user", userSchema);
 
-module.exports = userModel
+module.exports = userModel;
