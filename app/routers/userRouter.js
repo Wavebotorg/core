@@ -15,11 +15,9 @@ route.post('/forgetPassword', userController.ForgetPassword)
 route.post('/resetPassword', userController.resetPassword)
 route.post('/watchlist', authuser, userController.watchList)
 route.get('/getUserProfile', authuser, userController.getUserProfile);
-route.post('/addWallet', authuser, userController.addWallet);
 route.get('/recentUsers', authuser, userController.recentUsers);
 route.get('/allWatchlistData', authuser, userController.allWatchList);
 route.post('/removeCoinWatchlist', authuser, userController.removeCoinWatchlist);
-route.post('/verifyPrivateKey', authuser , userController.verifyPrivateKey);
 route.post('/fetchbalance', userController.fetchBalance);
 
 route.post('/balance', authuser  ,coinController.addbalance);
