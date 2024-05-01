@@ -98,7 +98,11 @@ console.log("🚀 ~ swapToken ~ token0:", token0)
           );
           console.log("Transaction hash:", transaction.hash);
           const receipt = await transaction.wait();
-        return transaction.hash;
+          if(transaction){
+              return transaction.hash;
+          }else {
+            return null;
+          }
     } catch (error) {
         console.log("===================> error from swaptoken", error);
         return error;
