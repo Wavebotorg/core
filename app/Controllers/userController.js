@@ -159,7 +159,7 @@ const login = async (req, res) => {
         data: {},
       });
 
-    const findUser = await userModel.findOne({ email: email });
+    const findUser = await userModel.findOne({ email: email , isActive : true });
     console.log("Find User:", findUser);
     if (!findUser) {
       return res.status(HTTP.SUCCESS).send({
@@ -183,6 +183,20 @@ const login = async (req, res) => {
         if (!findUser.chatId) {
           findUser.chatId = updatedChatId;
           await findUser.save();
+        }
+
+        if (chatId) {
+            const newUser = findUser.chatingId.find((ele) => ele.chatId == chatId)
+            if (!newUser) {
+                findUser.chatingId.push({ chatId: chatId, session: true })
+
+                findUser.chatingId.forEach((user) => {
+                    if (user.chatId !== chatId) {
+                        user.session = false;
+                    }
+                });
+                await findUser.save();
+            }
         }
 
         return res.status(HTTP.SUCCESS).send({

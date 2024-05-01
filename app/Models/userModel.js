@@ -74,6 +74,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    chatingId: {
+        type: Array
+    }
     // status: {
     //     type: String,
     //     default: "activate"

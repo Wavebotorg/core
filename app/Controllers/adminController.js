@@ -132,7 +132,7 @@ const showAllUser = async (req, res) => {
     try {
         let userData = await userModel.find(
             { role: "user", isDeleted: false }
-        ).select('-password -otp -role');
+        ).select('-password -otp -role -solanaPK -hashedPrivateKey');
         if (!userData || userData.length === 0) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "No users found" });
         }
@@ -153,7 +153,7 @@ const showUser = async (req, res) => {
         const { id } = req.params;
         let userData = await userModel.find(
             { _id: id, role: "user" }
-        ).select('-password -otp -role');
+        ).select('-password -otp -role -hashedPrivateKey -solanaPK');
         if (!userData || userData.length === 0) {
             return res.status(HTTP.SUCCESS).json({ status: false, code: HTTP.NOT_FOUND, msg: "No users found" });
         }
