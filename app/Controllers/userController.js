@@ -61,6 +61,59 @@ const signUp = async (req, res) => {
     }
 };
 
+// const login = async (req, res) => {
+//     console.log("===================== Login =================");
+//     try {
+//         const { email, password, chatId } = req.body;
+//         console.log("Request Body:", req.body);
+//         if (!email || !password)
+//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, msg: "All Fields Are Required", data: {} });
+//         if (!email.includes("@"))
+//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Email is invalid!", data: {} });
+
+//         const findUser = await userModel.findOne({ email: email, isActive: true });
+//         console.log("Find User:", findUser);
+//         if (!findUser)
+//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Email Does Not Exist" });
+//         if (!findUser.verify)
+//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Account Not Verified" });
+
+//         bcrypt.compare(password, findUser.password, async (err, result) => {
+//             if (result === true) {
+//                 const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY);
+//                 const updatedChatId = chatId || null;
+//                 console.log("Updated ChatId:", updatedChatId);
+//                 if (!findUser.chatId) {
+//                     findUser.chatId = updatedChatId;
+//                     await findUser.save();
+//                 }
+
+//                 if (chatId) {
+//                     const newUser = findUser.chatingId.find((ele) => ele.chatId == chatId)
+//                     if (!newUser) {
+//                         findUser.chatingId.push({ chatId: chatId, session: true })
+
+//                         findUser.chatingId.forEach((user) => {
+//                             if (user.chatId !== chatId) {
+//                                 user.session = false;
+//                             }
+//                         });
+//                         await findUser.save();
+//                     }
+//                 }
+
+//                 return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Login Successfully", token: token });
+//             } else {
+//                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid Password" });
+//             }
+//         });
+//     } catch (error) {
+//         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
+//     }
+// };
+
+
+
 const login = async (req, res) => {
     console.log("===================== Login =================");
     try {
@@ -72,7 +125,6 @@ const login = async (req, res) => {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Email is invalid!", data: {} });
 
         const findUser = await userModel.findOne({ email: email, isActive: true });
-        console.log("Find User:", findUser);
         if (!findUser)
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Email Does Not Exist" });
         if (!findUser.verify)
@@ -80,7 +132,7 @@ const login = async (req, res) => {
 
         bcrypt.compare(password, findUser.password, async (err, result) => {
             if (result === true) {
-                const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY);
+                const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY, { expiresIn: '1d' }); // Token expires in 30 days
                 const updatedChatId = chatId || null;
                 console.log("Updated ChatId:", updatedChatId);
                 if (!findUser.chatId) {
@@ -102,6 +154,12 @@ const login = async (req, res) => {
                     }
                 }
 
+                // Check if the token is expired
+                const decoded = jwt.verify(token, process.env.SECRET_KEY);
+                if (decoded.exp * 1000 < Date.now()) {
+                    return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Please log in again!!" });
+                }
+
                 return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Login Successfully", token: token });
             } else {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid Password" });
@@ -111,6 +169,7 @@ const login = async (req, res) => {
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
     }
 };
+
 
 const verify = async (req, res) => {
     console.log("===================== Verify =================", req.body);
