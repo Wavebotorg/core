@@ -53,7 +53,7 @@ const signUp = async (req, res) => {
                     sessionId: false
                 }
             });
-            const data = { name: name, email: email, otp: random_Number, /*templetpath: "./emailtemplets/otp_template.html"*/ };
+            const data = { name: name, email: email, otp: random_Number, templetpath: "./emailtemplets/otp_template.html" };
             sendMail(data);
             let saveData = await obj.save();
             //delete saveData._doc.otp
