@@ -4,7 +4,7 @@ const userController = require('../Controllers/userController')
 const coinController = require('../Controllers/coinBuySell')
 const SwapToken = require('../Controllers/uniswapTrader')
 const { authuser } = require("../middlewares/authuser")
-const solanaswapping  = require("../Controllers/solSwap.controller")
+const solanaswapping = require("../Controllers/solSwap.controller")
 
 
 //================================= User Controllers ================================
@@ -28,6 +28,7 @@ route.get('/viewbalance', authuser, coinController.viewBalance);
 
 route.post('/swapToken', SwapToken.swapToken);
 route.post('/solanaSwap', solanaswapping.solanaSwapping);
+route.post('/solanaBalance', solanaswapping.solanaBalanceFetch);
 
 route.post('/mainswap', userController.mainswap);
 

@@ -7,6 +7,7 @@ const { } = require("@solana/spl-token")
 const { getWalletInfo } = require("../../helpers")
 const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
+const HTTP = require("../../constants/responseCode.constant")
 
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
@@ -25,24 +26,27 @@ const connection = new Connection(
 
 // ----------------------------------------- fetch balance and desimals----------------------------------------------
 
-// async function getSolanaWalletInfo(tokenAddress) {
+async function getSolanaWalletInformation(walletaddress) {
 
-//     try {
-//         await Moralis.start({
-//             apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImQ0NjdmZGY2LTliMjAtNGI1OS04YjhiLTY5M2VjODI1Yzc0MSIsIm9yZ0lkIjoiMzYwNzQzIiwidXNlcklkIjoiMzcwNzQ2IiwidHlwZUlkIjoiNzE0YjA0ODItNzFlOC00MjZhLWFjMjAtNDVmOTNkMzAzYjEzIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE2OTcwOTU5OTMsImV4cCI6NDg1Mjg1NTk5M30.-PhgtuNnoH7o7jC6McGvSiw-tlX_VuOso5KzUrs2GNY",
-//         });
+    try {
+        if (!Moralis.Core.isStarted) {
+            await Moralis.start({
+                apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjFjNmIxYWYyLTE0NjUtNGJiYy1hMTY1LWM3ZjMzMGNkY2EyZiIsIm9yZ0lkIjoiMzkwODI0IiwidXNlcklkIjoiNDAxNTkxIiwidHlwZUlkIjoiYzNjYTI5MzQtYTU5MS00YjQ4LTk0MjQtOTg0ZWVkMzZlMTA5IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTQ3OTExNDYsImV4cCI6NDg3MDU1MTE0Nn0.x5unFuOwUE_Mz366qua85jkp8a8QBdcj4QwNnrls6ao",
+            });
+        }
 
-//         const response1 =
-//             await Moralis.SolApi.account.getPortfolio({
-//                 network: "mainnet",
-//                 address: tokenAddress
-//             })
+        const response1 =
+            await Moralis.SolApi.account.getPortfolio({
+                network: "mainnet",
+                address: walletaddress
+            })
 
-//         return response1?.raw;
-//     } catch (error) {
-//         console.log("🚀 ~ getSolanaWalletInfo ~ error:", error)
-//     }
-// }
+        return response1?.raw;
+    } catch (error) {
+        console.log("🚀 ~ getSolanaWalletInfo ~ error:", error)
+    }
+}
+// ----------------------------------------- fetch balance and desimals----------------------------------------------
 
 const apikey =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjFjNmIxYWYyLTE0NjUtNGJiYy1hMTY1LWM3ZjMzMGNkY2EyZiIsIm9yZ0lkIjoiMzkwODI0IiwidXNlcklkIjoiNDAxNTkxIiwidHlwZUlkIjoiYzNjYTI5MzQtYTU5MS00YjQ4LTk0MjQtOTg0ZWVkMzZlMTA5IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTQ3OTExNDYsImV4cCI6NDg3MDU1MTE0Nn0.x5unFuOwUE_Mz366qua85jkp8a8QBdcj4QwNnrls6ao";
@@ -72,22 +76,6 @@ async function getWalletInfoDes(tokenAddress, from) {
 
 // const connection1 = new Connection('https://api.mainnet-beta.solana.com');
 
-
-// ---------------------------------------- get reciept on txid------------------------------------------------------------
-
-async function getReceipt(txHash) {
-    try {
-        const receipt = await provider.getTransactionReceipt(txHash);
-        if (receipt) {
-            console.log("Transaction receipt:", receipt);
-            return receipt;
-        } else {
-            console.log("Transaction not yet mined or failed.");
-        }
-    } catch (error) {
-        console.error("Error fetching receipt:", error);
-    }
-}
 
 // =---------------------------------------------------------------get quatation function ----------------------------------------------------------
 async function getSwapQuote(inputMint, outputMint, amount) {
@@ -186,6 +174,7 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
     }
 }
 
+// ----------------------------------------- solana swapping controller --------------------------------
 
 async function solanaSwapping(req, res) {
     const { input, output, chatId, amount } = req.body
@@ -223,4 +212,28 @@ async function solanaSwapping(req, res) {
 }
 
 
-module.exports = { solanaSwapping }
+// -------------------------------- solana balance fetch Api-------------------------------------------
+async function solanaBalanceFetch(req, res) {
+    const { chatId, email } = req.body
+    try {
+        if (chatId) {
+
+            const walletDetails = await getWalletInfo(chatId)
+            if (!walletDetails) {
+                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found !", data: {} });
+            }
+            const walletTokensDetails = await getSolanaWalletInformation(walletDetails.solanawallet)
+
+            if (!walletTokensDetails) {
+                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
+            }
+
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens });
+
+        }
+    } catch (error) {
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.message });
+    }
+}
+
+module.exports = { solanaSwapping, solanaBalanceFetch }
