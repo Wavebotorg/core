@@ -80,7 +80,7 @@ const userSchema = new mongoose.Schema(
     referred: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user"
-    }
+    } 
 
     // status: {
     //     type: String,

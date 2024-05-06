@@ -640,15 +640,51 @@ const fetchBalance = async (req, res) => {
 
 const mainswap = async (req, res) => {
     let { token0, token1, amountIn, chainId, chatId, network, email } = req.body;
+    console.log("🚀 ~ mainswap ~ chainId:", chainId)
     console.log("🚀 ~ mainswap ~ chatId:", chatId)
     amountIn = Number(amountIn);
     chainId = Number(chainId);
+    let url;
+    switch (chainId) {
+        case 1:
+            url = "https://etherscan.io/tx/"
+            break;
+        case 42161:
+            url = "https://arbiscan.io/tx/"
+            break;
+        case 10:
+            url = "https://arbiscan.io/tx/"
+            break;
+        case 137:
+            url = "https://polygonscan.com/tx/"
+            break;
+        case 8453:
+            url = "https://basescan.org/tx/"
+            break;
+        case 56:
+            url = "https://bscscan.com/tx/"
+            break;
+        case 43114:
+            url = "https://avascan.info/blockchain/dfk/tx/"
+            break;
+        case 42220:
+            url = "https://celoscan.io/tx/"
+            break;
+        case 238:
+            url = "https://blastscan.io/tx/"
+            break;
+
+        default:
+            break;
+    }
     try {
         const userData = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
         console.log("🚀 ~ mainswap ~ userData:", userData)
         const poolAddress = await pooladress(token0, token1, chainId);
         if (poolAddress) {
-            const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet);
+            const executeSwapHash = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet);
+            const executeSwap = url + executeSwapHash
+            console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
             if (executeSwap != null) {
                 await TxnEvm.create({
                     userId: userData?.id,
@@ -658,6 +694,7 @@ const mainswap = async (req, res) => {
                     to: token1,
                     chainId: chainId,
                     network: network
+
                 })
                 return res.status(HTTP.SUCCESS).send({
                     status: true,
@@ -690,6 +727,7 @@ const mainswap = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     signUp,

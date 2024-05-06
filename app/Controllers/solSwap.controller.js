@@ -21,7 +21,7 @@ const connection = new Connection(
     process.env.SOLANA_RPC_URL,
     {
         commitment: "confirmed",
-        confirmTransactionInitialTimeout: 60000,
+        // confirmTransactionInitialTimeout: 60000,
     }
 );
 
@@ -262,4 +262,20 @@ async function solanaBalanceFetch(req, res) {
 // ------------------------------------------------- solana swap user transaction ---------------------------------------
 
 
-module.exports = { solanaSwapping, solanaBalanceFetch }
+async function getUserZBotData(req, res) {
+    const { chatId } = req.body
+    console.log("🚀 ~ getUserZBotData ~ chatId:", chatId)
+    if (!chatId) {
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "chat id required!", data: {} });
+    }
+    const walletDetails = await getWalletInfo(chatId)
+    console.log("🚀 ~ getUserZBotData ~ walletDetails:", walletDetails)
+
+    if (!walletDetails) {
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found!", data: {} });
+    }
+
+    return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "User details fetched!", walletDetails })
+}
+
+module.exports = { solanaSwapping, solanaBalanceFetch, getUserZBotData }

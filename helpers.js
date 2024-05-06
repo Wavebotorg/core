@@ -36,6 +36,7 @@ exports.getWalletInfo = async (chatId) => {
     }
     return {
       id: user?._id,
+      email: user?.email,
       wallet: user?.wallet,
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,

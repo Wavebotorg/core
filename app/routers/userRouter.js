@@ -29,7 +29,7 @@ route.get('/viewbalance', authuser, coinController.viewBalance);
 route.post('/swapToken', SwapToken.swapToken);
 route.post('/solanaSwap', solanaswapping.solanaSwapping);
 route.post('/solanaBalance', solanaswapping.solanaBalanceFetch);
-
+route.post('/getUserBotData', solanaswapping.getUserZBotData);
 route.post('/mainswap', userController.mainswap);
 
 
