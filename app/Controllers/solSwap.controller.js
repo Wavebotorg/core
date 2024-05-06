@@ -7,7 +7,8 @@ const { } = require("@solana/spl-token")
 const { getWalletInfo } = require("../../helpers")
 const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
-const HTTP = require("../../constants/responseCode.constant")
+const HTTP = require("../../constants/responseCode.constant");
+const userModel = require("../Models/userModel");
 
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
@@ -180,7 +181,6 @@ async function solanaSwapping(req, res) {
     const { input, output, chatId, amount } = req.body
     try {
         const walletDetails = await getWalletInfo(chatId)
-        console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails)
         const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
         console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
         if (!inputDesimals) {
@@ -228,6 +228,19 @@ async function solanaBalanceFetch(req, res) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
             }
 
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens });
+
+        }
+
+        if (email) {
+            const user = await userModel.findOne({ email: email });
+            if (!user) {
+                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found !", data: {} });
+            }
+            const walletTokensDetails = await getSolanaWalletInformation(user?.solanawallet)
+            if (!walletTokensDetails) {
+                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
+            }
             return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens });
 
         }
