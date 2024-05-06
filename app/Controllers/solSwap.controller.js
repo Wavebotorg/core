@@ -185,7 +185,7 @@ async function solanaSwapping(req, res) {
         const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
         console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
         if (!inputDesimals) {
-            throw new Error("transaction failed!!")
+            return res.status(200).send({ status: false, message: "transaction failed!!" })
         }
         // res.send(inputInfo)
         const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
@@ -202,7 +202,7 @@ async function solanaSwapping(req, res) {
             walletDetails.solanawallet
         );
         if (confirmTransaction?.value?.err) {
-            return res.status(400).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
         }
         const transactionCreated = await Txn.create({
             userId: walletDetails?.id,
