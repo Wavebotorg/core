@@ -56,10 +56,7 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     chatId: {
-      type: Number,
-      //required: true,
-      // default : "123",
-      // unique: true
+      type: Object,
     },
     role: {
       type: String,

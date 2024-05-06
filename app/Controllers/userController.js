@@ -47,7 +47,12 @@ const signUp = async (req, res) => {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This Email Is Already Existing" });
         if (req.body.password == req.body.confirmPassword) {
             const bpass = await bcrypt.hash(req.body.password, 10);
-            const obj = new userModel({ name: name, email: email, password: bpass, otp: random_Number, chatId: chatId });
+            const obj = new userModel({
+                name: name, email: email, password: bpass, otp: random_Number, chatId: {
+                    chat: chatId,
+                    sessionId: false
+                }
+            });
             const data = { name: name, email: email, otp: random_Number, /*templetpath: "./emailtemplets/otp_template.html"*/ };
             sendMail(data);
             let saveData = await obj.save();
@@ -124,7 +129,13 @@ const login = async (req, res) => {
         if (!email.includes("@"))
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Email is invalid!", data: {} });
 
+        if (chatId) {
+            // const user = await userModel.find({ chatId: chatId });
+            await userModel.updateMany({ "chatId.chat": chatId }, { $set: { "chatId.sessionId": false } });
+        }
+
         const findUser = await userModel.findOne({ email: email, isActive: true });
+
         if (!findUser)
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Email Does Not Exist" });
         if (!findUser.verify)
@@ -134,11 +145,11 @@ const login = async (req, res) => {
             if (result === true) {
                 const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY, { expiresIn: '1d' }); // Token expires in 30 days
                 const updatedChatId = chatId || null;
-                console.log("Updated ChatId:", updatedChatId);
-                if (!findUser.chatId) {
-                    findUser.chatId = updatedChatId;
-                    await findUser.save();
+                findUser.chatId = {
+                    chat: updatedChatId,
+                    sessionId: true
                 }
+                await findUser.save();
 
                 if (chatId) {
                     const newUser = findUser.chatingId.find((ele) => ele.chatId == chatId)
@@ -349,7 +360,7 @@ const watchList = async (req, res) => {
 //get user profile
 async function getUserProfile(req, res) {
     try {
-        let result = await userModel.findById(req.user.id);
+        let result = await userModel.findById(req.user.id).select("-solanaPK -hashedPrivateKey")
         if (!result) return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_FOUND, msg: "Record not found", data: {} });
         return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "User Profile", data: result });
     } catch (err) {
@@ -409,8 +420,7 @@ const fetchBalance = async (req, res) => {
             if (!chatId) {
                 return res.status(400).json({ error: "Chat ID is required" });
             }
-            const user = await userModel.findOne({ chatId: chatId });
-            console.log("🚀 ~ fetchBalance ~ user:", user);
+            const user = await userModel.findOne({ chatId: { chat: chatId, sessionId: true }, });
             if (!user || !user.wallet) {
                 return res.status(404).json({ error: "User not found or wallet address not available" });
             }
@@ -431,6 +441,7 @@ const fetchBalance = async (req, res) => {
             };
             const response = await axios(config);
             const balances = response.data.result;
+            console.log("🚀 ~ fetchBalance ~ balances:", balances)
             const contractAddresses = balances.tokenBalances
                 .filter((token) => token.tokenBalance !== 0)
                 .map((token) => token.contractAddress);
@@ -462,13 +473,15 @@ const fetchBalance = async (req, res) => {
                         return {
                             name: metadata.result.name,
                             logo: metadata.result.logo,
-                            balance: `${formattedBalance}`
+                            balance: `${formattedBalance}`,
+                            decimals : metadata.result.decimals,
                         };
                     }
                 }
                 return null;
             }).filter(token => token !== null);
             res.status(200).json(tokensData);
+            console.log("🚀 ~ fetchBalance ~ tokensData:", tokensData)
         } else if (req.body.email) {
             const { email } = req.body; // Corrected from chatId to email
             if (!email) {
@@ -536,6 +549,7 @@ const fetchBalance = async (req, res) => {
 
             res.status(200).json(tokensData);
         }
+           
     } catch (error) {
         console.error("Error fetching balance:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -680,3 +694,25 @@ module.exports = {
     mainswap,
     //getWalletInfo,
 };
+
+
+
+// async function getSolanaWalletInfo(tokenAddress) {
+
+//     try {
+//         await Moralis.start({
+//             apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImQ0NjdmZGY2LTliMjAtNGI1OS04YjhiLTY5M2VjODI1Yzc0MSIsIm9yZ0lkIjoiMzYwNzQzIiwidXNlcklkIjoiMzcwNzQ2IiwidHlwZUlkIjoiNzE0YjA0ODItNzFlOC00MjZhLWFjMjAtNDVmOTNkMzAzYjEzIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE2OTcwOTU5OTMsImV4cCI6NDg1Mjg1NTk5M30.-PhgtuNnoH7o7jC6McGvSiw-tlX_VuOso5KzUrs2GNY",
+//         });
+
+//         const response1 =
+//             await Moralis.SolApi.account.getPortfolio({
+//                 network: "mainnet",
+//                 address: tokenAddress
+//             })
+
+//         return response1?.raw;
+//     } catch (error) {
+//         console.log("🚀 ~ getSolanaWalletInfo ~ error:", error)
+
+//     }
+// }
