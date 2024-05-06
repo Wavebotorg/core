@@ -219,6 +219,7 @@ async function solanaBalanceFetch(req, res) {
         if (chatId) {
 
             const walletDetails = await getWalletInfo(chatId)
+            console.log("🚀 ~ solanaBalanceFetch ~ walletDetails:", walletDetails)
             if (!walletDetails) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found !", data: {} });
             }
@@ -228,7 +229,7 @@ async function solanaBalanceFetch(req, res) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
             }
 
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens,, walletAddress: user.solanawallet });
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens, walletAddress: walletDetails.solanawallet });
 
         }
 

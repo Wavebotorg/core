@@ -30,7 +30,7 @@ const userModel = require('./app/Models/userModel')
 exports.getWalletInfo = async (chatId) => {
   // console.log("Fetching wallet information...");
   try {
-    const user = await userModel.findOne({ chatId: { chat: chatId, sessionId: true }, });
+    const user = await userModel.findOne({ chatId: { chat: chatId, sessionId: true } });
     if (!user) {
       throw new Error("user not found!!")
     }
