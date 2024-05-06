@@ -9,6 +9,7 @@ const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
 const userModel = require("../Models/userModel");
+const Txn = require("../Models/Txn.model");
 
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
@@ -20,7 +21,7 @@ const connection = new Connection(
     process.env.SOLANA_RPC_URL,
     {
         commitment: "confirmed",
-        // confirmTransactionInitialTimeout: 120000,
+        confirmTransactionInitialTimeout: 60000,
     }
 );
 
@@ -160,9 +161,7 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
                 const confirmTransaction = await connection.confirmTransaction(txid);
                 console.log("🚀 ~ swapTokens ~ confirmTransaction:", confirmTransaction)
                 console.log(`https://solscan.io/tx/${txid}`);
-                if (confirmTransaction?.context?.err) {
-                    return confirmTransaction?.context?.err
-                }
+
                 return { txid, confirmTransaction };
             } catch (error) {
                 console.log("🚀 ~ swapTokens ~ error:", error);
@@ -205,10 +204,17 @@ async function solanaSwapping(req, res) {
         if (confirmTransaction?.value?.err) {
             return res.status(400).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
         }
-        return res.status(200).send({ status: true, message: "Transaction Successful!", txid })
+        const transactionCreated = await Txn.create({
+            userId: walletDetails?.id,
+            txid: txid,
+            amount: amount,
+            from: input,
+            to: output,
+        })
+        return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
     } catch (error) {
         console.log("🚀 ~ swapTokens ~ error:", error);
-        return res.status(500).send({ status: false, message: error })
+        return res.status(200).send({ status: false, message: "due to high trafic Transaction Failed please tyr again after some time!!" })
     }
 }
 
@@ -250,5 +256,10 @@ async function solanaBalanceFetch(req, res) {
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.message });
     }
 }
+
+
+// ------------------------------------------------- solana swapALL transaction ---------------------------------------
+// ------------------------------------------------- solana swap user transaction ---------------------------------------
+
 
 module.exports = { solanaSwapping, solanaBalanceFetch }

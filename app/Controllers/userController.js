@@ -13,9 +13,10 @@ var randomstring = require("randomstring");
 const HTTP = require("../../constants/responseCode.constant");
 const { sendMail } = require("../../email/useremail");
 const { pooladress } = require("../../swap");
-const { getWalletInfo } = require("../../helpers");
+const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { swapToken } = require("../Controllers/uniswapTrader");
 const { decrypt } = require("mongoose-field-encryption");
+const TxnEvm = require("../Models/TXNevmSwap");
 
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
@@ -35,8 +36,7 @@ const generateWallet = () => {
 const signUp = async (req, res) => {
     console.log("=============================== Sign Up =============================", req.body);
     try {
-        const { name, email, password, confirmPassword, chatId } = req.body;
-        console.log("🚀 ~ signUp ~ req.body:", req.body.chatId);
+        const { name, email, password, confirmPassword, chatId, referralCode } = req.body;
         if (!name || !email || !password || !confirmPassword)
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, message: "All Fields Are Required" });
         if (!email.includes("@"))
@@ -55,8 +55,15 @@ const signUp = async (req, res) => {
             });
             const data = { name: name, email: email, otp: random_Number, templetpath: "./emailtemplets/otp_template.html" };
             sendMail(data);
+            if (referralCode) {
+                const referralUser = await userModel.findOne({ referralId: referralCode })
+                if (referralUser) {
+                    obj.referred = referralUser?._id
+                }
+                await obj.save();
+            }
             let saveData = await obj.save();
-            //delete saveData._doc.otp
+            delete saveData._doc.otp
             return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Register Successfully", data: saveData });
         } else {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Password doesn't match!" });
@@ -164,7 +171,6 @@ const login = async (req, res) => {
                         await findUser.save();
                     }
                 }
-
                 // Check if the token is expired
                 const decoded = jwt.verify(token, process.env.SECRET_KEY);
                 if (decoded.exp * 1000 < Date.now()) {
@@ -217,10 +223,13 @@ const verify = async (req, res) => {
             }, {
                 new: true,
             });
-            console.log("🚀 ~ verify ~ updatedUser:", updatedUser);
             if (!updatedUser)
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Could not save wallet", data: {} });
 
+            const ref1 = walletAddress?.slice(-4)
+            const ref2 = email?.substring(0, email?.indexOf("@"))
+            findEmail.referralId = ref1 + ref2?.slice(0, 4)
+            await findEmail.save();
             return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Verify Successfully", data: req.body.types });
         } else {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid OTP. Please enter a valid OTP." });
@@ -253,7 +262,6 @@ const resendOTP = async (req, res) => {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Unable to send OTP!", data: {} });
         }
     } catch (error) {
-        console.log("🚀 ~ file: userController.js:108 ~ verify ~ error.msg:", error);
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
     }
 };
@@ -277,7 +285,6 @@ const ForgetPassword = async (req, res) => {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Unable to send OTP!", data: {} });
         }
     } catch (error) {
-        console.log("🚀 ~ file: userController.js:108 ~ verify ~ error.msg:", error);
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
     }
 
@@ -321,7 +328,6 @@ async function getData() {
                 locale: "en",
             },
         });
-        //console.log("🚀 ~ getData ~ response:", response)
         return response.data;
     } catch (error) {
         console.error("Error updating watchlist with API data:", error);
@@ -360,7 +366,10 @@ const watchList = async (req, res) => {
 //get user profile
 async function getUserProfile(req, res) {
     try {
-        let result = await userModel.findById(req.user.id).select("-solanaPK -hashedPrivateKey")
+        let result = await userModel.findById(req.user.id).populate({
+            path: "referred",
+            select: "name"
+        }).select("-solanaPK -hashedPrivateKey")
         if (!result) return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_FOUND, msg: "Record not found", data: {} });
         return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "User Profile", data: result });
     } catch (err) {
@@ -380,7 +389,6 @@ async function recentUsers(req, res) {
         if (!newusers) return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_FOUND, msg: "users not found!", data: {} });
         return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "recently joined users!.", data: newuser });
     } catch (error) {
-        console.log("🚀 ~ recentUsers ~ error:", error);
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something went wrong!", data: {} });
     }
 
@@ -393,7 +401,6 @@ async function allWatchList(req, res) {
         const newusers = await userModel.findById(req.user._id);
         return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "All WatchList Data Show.", data: newusers.watchlist.reverse() });
     } catch (error) {
-        console.log("🚀 ~ allWatchList ~ error:", error);
         return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something went wrong!", data: {} });
     }
 
@@ -406,7 +413,6 @@ const removeCoinWatchlist = async (req, res) => {
         if (updatedUser) return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Coin removed from Watchlist successfully.", data: updatedUser.watchlist });
         else return res.status(HTTP.NOT_FOUND).send({ status: false, code: HTTP.NOT_FOUND, msg: "User not found or coin not in Watchlist.", data: {} });
     } catch (error) {
-        console.log("🚀 ~ removeCoinWatchlist ~ error:", error);
         return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something went wrong!", data: {} });
     }
 
@@ -441,7 +447,6 @@ const fetchBalance = async (req, res) => {
             };
             const response = await axios(config);
             const balances = response.data.result;
-            console.log("🚀 ~ fetchBalance ~ balances:", balances)
             const contractAddresses = balances.tokenBalances
                 .filter((token) => token.tokenBalance !== 0)
                 .map((token) => token.contractAddress);
@@ -474,21 +479,19 @@ const fetchBalance = async (req, res) => {
                             name: metadata.result.name,
                             logo: metadata.result.logo,
                             balance: `${formattedBalance}`,
-                            decimals : metadata.result.decimals,
+                            decimals: metadata.result.decimals,
                         };
                     }
                 }
                 return null;
             }).filter(token => token !== null);
             res.status(200).json(tokensData);
-            console.log("🚀 ~ fetchBalance ~ tokensData:", tokensData)
         } else if (req.body.email) {
             const { email } = req.body; // Corrected from chatId to email
             if (!email) {
                 return res.status(400).json({ error: "Email is required" }); // Corrected from Chat ID to Email
             }
             const user = await userModel.findOne({ email: email }); // Corrected from chatId to email
-            console.log("🚀 ~ fetchBalance ~ user:", user);
             if (!user || !user.wallet) {
                 return res.status(404).json({ error: "User not found or wallet address not available" });
             }
@@ -549,7 +552,7 @@ const fetchBalance = async (req, res) => {
 
             res.status(200).json(tokensData);
         }
-           
+
     } catch (error) {
         console.error("Error fetching balance:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -565,7 +568,6 @@ const fetchBalance = async (req, res) => {
 //             return res.status(400).json({ error: "Chat ID is required" });
 //         }
 //         const user = await userModel.findOne({ chatId: chatId });
-//         console.log("🚀 ~ fetchBalance ~ user:", user)
 //         if (!user || !user.wallet) {
 //             return res.status(404).json({ error: "User not found or wallet address not available" });
 //         }
@@ -637,15 +639,26 @@ const fetchBalance = async (req, res) => {
 
 
 const mainswap = async (req, res) => {
-    let { token0, token1, amountIn, chainId, chatId } = req.body;
+    let { token0, token1, amountIn, chainId, chatId, network, email } = req.body;
+    console.log("🚀 ~ mainswap ~ chatId:", chatId)
     amountIn = Number(amountIn);
     chainId = Number(chainId);
     try {
-        const userData = await getWalletInfo(chatId);
+        const userData = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+        console.log("🚀 ~ mainswap ~ userData:", userData)
         const poolAddress = await pooladress(token0, token1, chainId);
         if (poolAddress) {
             const executeSwap = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet);
             if (executeSwap != null) {
+                await TxnEvm.create({
+                    userId: userData?.id,
+                    txid: executeSwap,
+                    amount: amountIn,
+                    from: token0,
+                    to: token1,
+                    chainId: chainId,
+                    network: network
+                })
                 return res.status(HTTP.SUCCESS).send({
                     status: true,
                     code: HTTP.SUCCESS,
@@ -712,7 +725,5 @@ module.exports = {
 
 //         return response1?.raw;
 //     } catch (error) {
-//         console.log("🚀 ~ getSolanaWalletInfo ~ error:", error)
-
 //     }
 // }

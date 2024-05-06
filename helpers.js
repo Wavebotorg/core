@@ -35,6 +35,7 @@ exports.getWalletInfo = async (chatId) => {
       throw new Error("user not found!!")
     }
     return {
+      id: user?._id,
       wallet: user?.wallet,
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,
@@ -53,6 +54,7 @@ exports.getWalletInfoByEmail = async (email) => {
       throw new Error("user not found!!")
     }
     return {
+      id: user?._id,
       wallet: user?.wallet,
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,

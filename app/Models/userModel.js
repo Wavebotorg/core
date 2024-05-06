@@ -72,8 +72,16 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     chatingId: {
-        type: Array
+      type: Array
+    },
+    referralId: {
+      type: String
+    },
+    referred: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user"
     }
+
     // status: {
     //     type: String,
     //     default: "activate"

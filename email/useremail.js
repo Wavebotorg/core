@@ -10,8 +10,8 @@ var transporter = nodemailer.createTransport({
     secure: true,
     service: 'gmail',
     auth: {
-        user: 'test.project7312@gmail.com',
-        pass: 'apis tsfn jznu ajlm'
+        user: 'info@wavebot.app',
+        pass: 'v v h m q r w z h u q x f o k m'
     }
 });
 
@@ -22,7 +22,7 @@ const sendMail = (data) => {
     fs.readFile(templetpath, { encoding: 'utf-8' }, function (err, html) {
 
         var template = handlebars.compile(html);
-        var htmlToSend = template({ username: data.name, email: data.email, otp : data.otp });
+        var htmlToSend = template({ username: data.name, email: data.email, otp: data.otp });
 
         var mailOptions = {
             from: 'test.project7312@gmail.com',

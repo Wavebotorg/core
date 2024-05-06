@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const txnSchema = new mongoose.Schema({
+const txnEvmSwap = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
@@ -16,9 +16,17 @@ const txnSchema = new mongoose.Schema({
     },
     to: {
         type: String
+    },
+    network: {
+        type: String,
+        default: "arbitrum"
+    },
+    chainId: {
+        type: Number,
     }
-}, { timestamps: true });
+}, { timestamps: true })
 
-const Txn = mongoose.model('Txn', txnSchema);
+const TxnEvm = mongoose.model("TxnEvm", txnEvmSwap)
 
-module.exports = Txn;
+
+module.exports = TxnEvm
