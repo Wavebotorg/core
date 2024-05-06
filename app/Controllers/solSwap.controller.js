@@ -228,7 +228,7 @@ async function solanaBalanceFetch(req, res) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
             }
 
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens });
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens,, walletAddress: user.solanawallet });
 
         }
 
@@ -241,7 +241,7 @@ async function solanaBalanceFetch(req, res) {
             if (!walletTokensDetails) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "network error please try again!", data: {} });
             }
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens });
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "balance fetch successfully !", data: walletTokensDetails?.tokens, walletAddress: user.solanawallet });
 
         }
     } catch (error) {
