@@ -45,3 +45,21 @@ exports.getWalletInfo = async (chatId) => {
     throw error;
   }
 }
+exports.getWalletInfoByEmail = async (email) => {
+  // console.log("Fetching wallet information...");
+  try {
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+      throw new Error("user not found!!")
+    }
+    return {
+      wallet: user?.wallet,
+      hashedPrivateKey: user?.hashedPrivateKey,
+      solanaPK: user?.solanaPK,
+      solanawallet: user?.solanawallet
+    };
+  } catch (error) {
+    console.error('Error fetching wallet information from the database:', error.message);
+    throw error;
+  }
+}

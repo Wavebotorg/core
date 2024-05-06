@@ -4,7 +4,7 @@ const {
     VersionedTransaction,
 } = require("@solana/web3.js");
 const { } = require("@solana/spl-token")
-const { getWalletInfo } = require("../../helpers")
+const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers")
 const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
@@ -178,33 +178,33 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
 // ----------------------------------------- solana swapping controller --------------------------------
 
 async function solanaSwapping(req, res) {
-    const { input, output, chatId, amount } = req.body
+    const { input, output, chatId, amount, email } = req.body
     try {
-        const walletDetails = await getWalletInfo(chatId)
-        const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
-        console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
-        if (!inputDesimals) {
-            throw new Error("transaction failed!!")
-        }
-        // res.send(inputInfo)
-        const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
-        console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-        const numbersArray = walletDetails.solanaPK.split(',').map(Number);
-        const PK = Uint8Array.from(numbersArray);
-        const mainWallet = Keypair.fromSecretKey(PK);
+        const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+        console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails)
+        // const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
+        // console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
+        // if (!inputDesimals) {
+        //     throw new Error("transaction failed!!")
+        // }
+        // // res.send(inputInfo)
+        // const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
+        // console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
+        // const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+        // const PK = Uint8Array.from(numbersArray);
+        // const mainWallet = Keypair.fromSecretKey(PK);
 
-        const { txid, confirmTransaction } = await swapTokens(
-            input,
-            output,
-            amountSOL,
-            mainWallet,
-            walletDetails.solanawallet
-        );
-
-        if (confirmTransaction?.value?.err) {
-            return res.status(400).send({ status: false, message: confirmTransaction?.value?.err })
-        }
-        return res.status(200).send({ status: true, message: txid })
+        // const { txid, confirmTransaction } = await swapTokens(
+        //     input,
+        //     output,
+        //     amountSOL,
+        //     mainWallet,
+        //     walletDetails.solanawallet
+        // );
+        // if (confirmTransaction?.value?.err) {
+        //     return res.status(400).send({ status: false, message: confirmTransaction?.value?.err })
+        // }
+        // return res.status(200).send({ status: true, message: txid })
     } catch (error) {
         console.log("🚀 ~ swapTokens ~ error:", error);
         return res.status(500).send({ status: false, message: error })
