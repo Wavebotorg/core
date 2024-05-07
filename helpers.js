@@ -32,7 +32,7 @@ exports.getWalletInfo = async (chatId) => {
   try {
     const user = await userModel.findOne({ chatId: { chat: chatId, sessionId: true } });
     if (!user) {
-      throw new Error("user not found!!")
+      return null
     }
     return {
       id: user?._id,
