@@ -42,10 +42,8 @@ async function getSolanaWalletInformation(walletaddress) {
                 network: "mainnet",
                 address: walletaddress
             })
-
         return response1?.raw;
     } catch (error) {
-        console.log("🚀 ~ getSolanaWalletInfo ~ error:", error)
     }
 }
 // ----------------------------------------- fetch balance and desimals----------------------------------------------
@@ -64,13 +62,11 @@ async function getWalletInfoDes(tokenAddress, from) {
             address: tokenAddress,
         });
         const convertRaw = response1?.raw;
-        console.log("🚀 ~ getWalletInfoDes ~ convertRaw:", convertRaw)
         const desimal = await convertRaw?.tokens?.find(
             (item) => item?.mint == from
         );
         return desimal?.decimals;
     } catch (error) {
-        console.log("🚀 ~ getSolanaWalletInfo ~ error:", error);
     }
 }
 
@@ -110,8 +106,7 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
             amount
             //   ethers.utils.parseUnits(amount.toString(), 6)
         );
-
-        console.log("🚀 ~ swapTokens ~ getQuote:", getQuote);
+        console.log("🚀 ~ swapTokens ~ getQuote:", getQuote)
         const response = await fetch(process.env.SOLANA_SWAP_URL, {
             method: "POST",
             headers: {
@@ -130,22 +125,19 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         });
 
         const swapResponse = await response.json();
-
-        console.log("🚀 ~ swapTokens ~ response:", swapResponse.swapTransaction);
-
+        console.log("🚀 ~ swapTokens ~ swapResponse:", swapResponse)
         if (swapResponse.swapTransaction) {
             const swapTransactionBuf = Buffer.from(
                 swapResponse.swapTransaction,
                 "base64"
             );
-            console.log("🚀 ~ swapTokens ~ swapTransactionBuf:", swapTransactionBuf);
             var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-            console.log("🚀 ~ swapTokens ~ transaction:", transaction);
-
+            console.log("🚀 ~ swapTokens ~ transaction:", transaction)
             // sign the transaction
             try {
                 transaction.sign([mainWallet]);
-                console.log(" ~ swapTokens ~ transaction signed successfully");
+                console.log("🚀 ~ Transaction signed Successfully!!")
+
                 // ... (rest of your swap logic)
             } catch (error) {
                 console.error(" ~ swapTokens ~ error signing transaction:", error);
@@ -158,64 +150,102 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
                     skipPreflight: true,
                     maxRetries: 2,
                 });
-                const confirmTransaction = await connection.confirmTransaction(txid);
-                console.log("🚀 ~ swapTokens ~ confirmTransaction:", confirmTransaction)
+                console.log("🚀 ~ swapTokens ~ txid:", txid)
+                const confirmTransaction = await connection.confirmTransaction(txid)
                 console.log(`https://solscan.io/tx/${txid}`);
 
-                return { txid, confirmTransaction };
+                return { txid, confirmTransaction }
             } catch (error) {
-                console.log("🚀 ~ swapTokens ~ error:", error);
             }
         }
 
         // return await response.json();
     } catch (error) {
-        console.log("🚀 ~ swapTokens ~ error:", error);
+        console.log("🚀 ~ swapTokens ~ error:", error)
     }
 }
 
 // ----------------------------------------- solana swapping controller --------------------------------
 
 async function solanaSwapping(req, res) {
-    const { input, output, chatId, amount, email } = req.body
-    console.log("🚀 ~ solanaSwapping ~ chatId:", chatId)
-    try {
-        const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-        console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails)
-        const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
-        console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
-        if (!inputDesimals) {
-            return res.status(200).send({ status: false, message: "transaction failed!!" })
-        }
-        // res.send(inputInfo)
-        const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
-        console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-        const numbersArray = walletDetails.solanaPK.split(',').map(Number);
-        const PK = Uint8Array.from(numbersArray);
-        const mainWallet = Keypair.fromSecretKey(PK);
+    const { input, output, chatId, amount, email, desBot } = req.body
+    console.log("🚀 ~ solanaSwapping ~ req.body:", req.body)
+    if (desBot) {
+        try {
 
-        const { txid, confirmTransaction } = await swapTokens(
-            input,
-            output,
-            amountSOL,
-            mainWallet,
-            walletDetails.solanawallet
-        );
-        if (confirmTransaction?.value?.err) {
-            return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            console.log("------------ buy function run --------------------------------")
+            const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+            // res.send(inputInfo)
+            const amountSOL = await ethers.utils.parseUnits(amount?.toFixed(9).toString(), 9);
+            console.log("------------ amout --------------------------------")
+
+            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
+            const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+            const PK = Uint8Array.from(numbersArray);
+            const mainWallet = Keypair.fromSecretKey(PK);
+
+            const { txid, confirmTransaction } = await swapTokens(
+                input,
+                output,
+                amountSOL,
+                mainWallet,
+                walletDetails.solanawallet
+            );
+            if (confirmTransaction?.value?.err) {
+                return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            }
+            const transactionCreated = await Txn.create({
+                userId: walletDetails?.id,
+                txid: txid,
+                amount: amount,
+                from: input,
+                to: output,
+            })
+            return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+        } catch (error) {
+            console.log("🚀 ~ solanaSwapping ~ error:", error)
+            return res.status(200).send({ status: false, message: error.message })
         }
-        const transactionCreated = await Txn.create({
-            userId: walletDetails?.id,
-            txid: txid,
-            amount: amount,
-            from: input,
-            to: output,
-        })
-        return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
-    } catch (error) {
-        console.log("🚀 ~ swapTokens ~ error:", error);
-        return res.status(200).send({ status: false, message: "due to high trafic Transaction Failed please tyr again after some time!!" })
+    } else {
+        try {
+            console.log("------------ swap function run --------------------------------")
+            const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+            const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
+            console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
+            if (!inputDesimals) {
+                return res.status(200).send({ status: false, message: "transaction failed!!" })
+            }
+            // res.send(inputInfo)
+            const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
+            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
+            const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+            const PK = Uint8Array.from(numbersArray);
+            const mainWallet = Keypair.fromSecretKey(PK);
+
+            const { txid, confirmTransaction } = await swapTokens(
+                input,
+                output,
+                amountSOL,
+                mainWallet,
+                walletDetails.solanawallet
+            );
+            if (confirmTransaction?.value?.err) {
+                return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            }
+            const transactionCreated = await Txn.create({
+                userId: walletDetails?.id,
+                txid: txid,
+                amount: amount,
+                from: input,
+                to: output,
+            })
+            return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+        } catch (error) {
+            console.log("🚀 ~ solanaSwapping ~ error:", error)
+            return res.status(200).send({ status: false, message: error.message })
+        }
     }
+
 }
 
 
@@ -226,7 +256,6 @@ async function solanaBalanceFetch(req, res) {
         if (chatId) {
 
             const walletDetails = await getWalletInfo(chatId)
-            console.log("🚀 ~ solanaBalanceFetch ~ walletDetails:", walletDetails)
             if (!walletDetails) {
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found !", data: {} });
             }
@@ -258,19 +287,13 @@ async function solanaBalanceFetch(req, res) {
 }
 
 
-// ------------------------------------------------- solana swapALL transaction ---------------------------------------
-// ------------------------------------------------- solana swap user transaction ---------------------------------------
-
 
 async function getUserZBotData(req, res) {
     const { chatId } = req.body
-    console.log("🚀 ~ getUserZBotData ~ chatId:", chatId)
     if (!chatId) {
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "chat id required!", data: {} });
     }
     const walletDetails = await getWalletInfo(chatId)
-    console.log("🚀 ~ getUserZBotData ~ walletDetails:", walletDetails)
-
     if (!walletDetails) {
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "User not found!", data: {} });
     }
@@ -278,4 +301,78 @@ async function getUserZBotData(req, res) {
     return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "User details fetched!", walletDetails })
 }
 
-module.exports = { solanaSwapping, solanaBalanceFetch, getUserZBotData }
+
+// --------------------------------- get token solana token price -------------------------------
+async function getSolanaTokenPrice(req, res) {
+    try {
+        console.log("----------------start---------------------")
+        if (!Moralis.Core.isStarted) {
+            await Moralis.start({
+                apiKey: apikey,
+            });
+        }
+        const response1 = await Moralis.SolApi.token.getTokenPrice({
+            network: "mainnet",
+            address: req.body?.token,
+        });
+        if (!response1) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "somthing went wrong!!", data: {} });
+        }
+        const response2 = await Moralis.SolApi.token.getTokenPrice({
+            network: "mainnet",
+            address: req.body.token2,
+        });
+        if (!response2) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "token not found enter valid token!!", data: {} });
+        }
+        const finalRes = {
+            sol: response1?.jsonResponse?.usdPrice,
+            to: response2?.jsonResponse?.usdPrice
+        }
+        console.log("🚀 ~ getSolanaTokenPrice ~ finalRes:", finalRes)
+        return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "price fetched!", finalRes })
+
+        // return desimal?.decimals;
+    } catch (error) {
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "token not found enter valid token!" })
+    }
+}
+
+// ---------------------------------- get EVM token prices --------------------------------
+
+async function getEvmTokenPrice(req, res) {
+    try {
+        console.log("----------------start---------------------")
+        if (!Moralis.Core.isStarted) {
+            await Moralis.start({
+                apiKey: apikey,
+            });
+        }
+        const response1 = await Moralis.EvmApi.token.getTokenPrice({
+            chain: req?.body?.chain,
+            address: req?.body?.token
+        });
+        if (!response1) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "somthing went wrong!!", data: {} });
+        }
+        const response2 = await Moralis.EvmApi.token.getTokenPrice({
+            chain: req?.body?.chain,
+            address: req?.body?.token2
+        });
+        if (!response2) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "token not found enter valid token!!", data: {} });
+        }
+        const finalRes = {
+            token1: response1?.jsonResponse?.usdPrice,
+            token2: response2?.jsonResponse?.usdPrice
+        }
+        console.log("🚀 ~ getSolanaTokenPrice ~ finalRes:", finalRes)
+        return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, message: "price fetched!", finalRes })
+
+        // return desimal?.decimals;
+    } catch (error) {
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "token not found enter valid token!" })
+    }
+}
+
+module.exports = { solanaSwapping, solanaBalanceFetch, getUserZBotData, getSolanaTokenPrice, getEvmTokenPrice }

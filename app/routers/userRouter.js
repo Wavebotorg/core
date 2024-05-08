@@ -29,9 +29,14 @@ route.get('/viewbalance', authuser, coinController.viewBalance);
 route.post('/swapToken', SwapToken.swapToken);
 route.post('/solanaSwap', solanaswapping.solanaSwapping);
 route.post('/solanaBalance', solanaswapping.solanaBalanceFetch);
+route.post('/getSolanaTokenPrice', solanaswapping.getSolanaTokenPrice);
+
+
 route.post('/getUserBotData', solanaswapping.getUserZBotData);
 route.post('/mainswap', userController.mainswap);
 route.post('/startBot', userController.startBot);
 route.post('/logoutBotUser', userController.logoutBotUser);
+route.post('/getEvmTokenPrice', solanaswapping.getEvmTokenPrice);
+
 
 module.exports = route

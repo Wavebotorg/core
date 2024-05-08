@@ -46,7 +46,7 @@ const signUp = async (req, res) => {
 
         if (finduser)
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This Email Is Already Existing" });
-        const findByUsername = await userModel.findOne({ email: name });
+        const findByUsername = await userModel.findOne({ name: name });
         if (findByUsername) {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This username Is Already Existing" });
 
@@ -183,7 +183,6 @@ const verify = async (req, res) => {
             welcomeSendMail(data);
             if (!updatedUser)
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Could not save wallet", data: {} });
-
             const ref1 = walletAddress?.slice(-4)
             const ref2 = email?.substring(0, email?.indexOf("@"))
             findEmail.referralId = ref1 + ref2?.slice(0, 4)
@@ -339,7 +338,7 @@ async function getUserProfile(req, res) {
 // Recent Join
 async function recentUsers(req, res) {
     try {
-        const newusers = await userModel.find({}).sort({ createdAt: -1 }).limit(10);
+        const newusers = await userModel.find({ role: "user" }).sort({ createdAt: -1 }).limit(10);
         let newuser = [];
         for (data of newusers) {
             newuser.push({ name: data.name, email: data.email, createdAt: data.createdAt });
