@@ -11,7 +11,7 @@ const bs58 = require("bs58");
 const { ObjectId } = require("mongodb");
 var randomstring = require("randomstring");
 const HTTP = require("../../constants/responseCode.constant");
-const { sendMail } = require("../../email/useremail");
+const { sendMail, welcomeSendMail } = require("../../email/useremail");
 const { pooladress } = require("../../swap");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { swapToken } = require("../Controllers/uniswapTrader");
@@ -43,17 +43,25 @@ const signUp = async (req, res) => {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, message: "Email is invalid !", data: {} });
         const random_Number = randomstring.generate({ length: 4, charset: "numeric" });
         const finduser = await userModel.findOne({ email: req.body.email });
+
         if (finduser)
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This Email Is Already Existing" });
+        const findByUsername = await userModel.findOne({ email: name });
+        if (findByUsername) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "This username Is Already Existing" });
+
+        }
         if (req.body.password == req.body.confirmPassword) {
             const bpass = await bcrypt.hash(req.body.password, 10);
             const obj = new userModel({
                 name: name, email: email, password: bpass, otp: random_Number, chatId: {
                     chat: chatId,
                     sessionId: false
-                }
+                },
+                createdAt: new Date().toLocaleDateString("en-GB")
             });
-            const data = { name: name, email: email, otp: random_Number, templetpath: "./emailtemplets/otp_template.html" };
+            //const data = { name: name, email: email, otp: random_Number, templetpath: "./emailtemplets/otp_template.html" };
+            const data = { name: name, email: email, otp: random_Number, createdAt: obj.createdAt, templetpath: "./emailtemplets/templaet.html" };
             sendMail(data);
             if (referralCode) {
                 const referralUser = await userModel.findOne({ referralId: referralCode })
@@ -72,58 +80,6 @@ const signUp = async (req, res) => {
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.message });
     }
 };
-
-// const login = async (req, res) => {
-//     console.log("===================== Login =================");
-//     try {
-//         const { email, password, chatId } = req.body;
-//         console.log("Request Body:", req.body);
-//         if (!email || !password)
-//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, msg: "All Fields Are Required", data: {} });
-//         if (!email.includes("@"))
-//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Email is invalid!", data: {} });
-
-//         const findUser = await userModel.findOne({ email: email, isActive: true });
-//         console.log("Find User:", findUser);
-//         if (!findUser)
-//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Email Does Not Exist" });
-//         if (!findUser.verify)
-//             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Account Not Verified" });
-
-//         bcrypt.compare(password, findUser.password, async (err, result) => {
-//             if (result === true) {
-//                 const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY);
-//                 const updatedChatId = chatId || null;
-//                 console.log("Updated ChatId:", updatedChatId);
-//                 if (!findUser.chatId) {
-//                     findUser.chatId = updatedChatId;
-//                     await findUser.save();
-//                 }
-
-//                 if (chatId) {
-//                     const newUser = findUser.chatingId.find((ele) => ele.chatId == chatId)
-//                     if (!newUser) {
-//                         findUser.chatingId.push({ chatId: chatId, session: true })
-
-//                         findUser.chatingId.forEach((user) => {
-//                             if (user.chatId !== chatId) {
-//                                 user.session = false;
-//                             }
-//                         });
-//                         await findUser.save();
-//                     }
-//                 }
-
-//                 return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Login Successfully", token: token });
-//             } else {
-//                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid Password" });
-//             }
-//         });
-//     } catch (error) {
-//         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.msg });
-//     }
-// };
-
 
 
 const login = async (req, res) => {
@@ -223,6 +179,8 @@ const verify = async (req, res) => {
             }, {
                 new: true,
             });
+            const data = { email: findEmail?.email, username: findEmail?.name, createdAt: findEmail?.createdAt, templetpath: "./emailtemplets/welcomemailtemp.html" };
+            welcomeSendMail(data);
             if (!updatedUser)
                 return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Could not save wallet", data: {} });
 
@@ -230,7 +188,7 @@ const verify = async (req, res) => {
             const ref2 = email?.substring(0, email?.indexOf("@"))
             findEmail.referralId = ref1 + ref2?.slice(0, 4)
             await findEmail.save();
-            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Verify Successfully", data: req.body.types });
+            return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Verification Successful. Welcome email sent.", data: req.body.types });
         } else {
             return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Invalid OTP. Please enter a valid OTP." });
         }
@@ -560,88 +518,10 @@ const fetchBalance = async (req, res) => {
 };
 
 
-
-// const fetchBalance = async (req, res) => {
-//     try {
-//         const { chatId } = req.body;
-//         if (!chatId) {
-//             return res.status(400).json({ error: "Chat ID is required" });
-//         }
-//         const user = await userModel.findOne({ chatId: chatId });
-//         if (!user || !user.wallet) {
-//             return res.status(404).json({ error: "User not found or wallet address not available" });
-//         }
-//         const wallet = user.wallet;
-//         const baseURL = "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
-//         const data = {
-//             jsonrpc: "2.0",
-//             method: "alchemy_getTokenBalances",
-//             headers: { "Content-Type": "application/json" },
-//             params: [`${wallet}`],
-//             id: 42
-//         };
-//         const config = {
-//             method: "post",
-//             url: baseURL,
-//             headers: { "Content-Type": "application/json" },
-//             data: JSON.stringify(data)
-//         };
-//         const response = await axios(config);
-//         const balances = response.data.result;
-
-//         const contractAddresses = balances.tokenBalances
-//             .filter((token) => token.tokenBalance !== 0)
-//             .map((token) => token.contractAddress);
-
-//         const metadataPromises = contractAddresses.map(async (contractAddress) => {
-//             const options = {
-//                 method: "POST",
-//                 url: baseURL,
-//                 headers: {
-//                     accept: "application/json",
-//                     "content-type": "application/json"
-//                 },
-//                 data: {
-//                     id: 1,
-//                     jsonrpc: "2.0",
-//                     method: "alchemy_getTokenMetadata",
-//                     params: [contractAddress]
-//                 }
-//             };
-//             return axios.request(options);
-//         });
-
-//         const metadataResponses = await Promise.all(metadataPromises);
-
-//         const tokensData = metadataResponses.map((metadataResponse, index) => {
-//             const balance = balances?.tokenBalances[index]?.tokenBalance;
-//             if (typeof balance !== "undefined") {
-//                 const metadata = metadataResponse.data;
-//                 if (metadata?.result) {
-//                     const balanceValue = balance / Math.pow(10, metadata.result.decimals);
-//                     const formattedBalance = balanceValue.toFixed(5);
-//                     return {
-//                         name: metadata.result.name,
-//                         logo: metadata.result.logo,
-//                         balance: `${formattedBalance}`
-//                     };
-//                 }
-//             }
-//             return null;
-//         }).filter(token => token !== null);
-
-//         res.status(200).json(tokensData);
-//     } catch (error) {
-//         console.error("Error fetching balance:", error);
-//         res.status(500).json({ error: "Internal Server Error" });
-//     }
-// };
-
-
 const mainswap = async (req, res) => {
     let { token0, token1, amountIn, chainId, chatId, network, email } = req.body;
-    console.log("🚀 ~ mainswap ~ chainId:", chainId)
-    console.log("🚀 ~ mainswap ~ chatId:", chatId)
+    if (!token0 || !token1 || !amountIn || !chainId)
+        return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, message: "All Fields Are Required" });
     amountIn = Number(amountIn);
     chainId = Number(chainId);
     let url;
@@ -679,12 +559,10 @@ const mainswap = async (req, res) => {
     }
     try {
         const userData = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-        console.log("🚀 ~ mainswap ~ userData:", userData)
         const poolAddress = await pooladress(token0, token1, chainId);
         if (poolAddress) {
             const executeSwapHash = await swapToken(token0, token1, poolAddress[0], amountIn, chainId, chatId, userData.hashedPrivateKey, userData.wallet);
             const executeSwap = url + executeSwapHash
-            console.log("🚀 ~ mainswap ~ executeSwap:", executeSwap)
             if (executeSwap != null) {
                 await TxnEvm.create({
                     userId: userData?.id,
@@ -729,7 +607,67 @@ const mainswap = async (req, res) => {
 };
 
 
+// ----------------------------------- start bot API ----------------------------------
+
+async function startBot(req, res) {
+    const { chatId } = req.body
+    console.log("🚀 ~ startBot ~ chatId:", chatId)
+    const isLogin = await userModel.findOne({
+        chatId: {
+            chat: req.body.chatId,
+            sessionId: true
+        }
+    });
+    if (!isLogin) {
+        return res.status(HTTP.BAD_REQUEST).send({
+            status: false,
+            code: HTTP.BAD_REQUEST,
+            msg: "please login!",
+            data: {},
+        });
+    }
+    return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "already loggin!!",
+        data: {},
+    });
+}
+
+
+// -------------------------------------------------- logout ------------------------------------
+
+async function logoutBotUser(req, res) {
+    const { chatId } = req.body
+    console.log("🚀 ~ logoutBotUser ~ chatId:", chatId)
+    // const user = await userModel.find({ chatId: chatId });
+    const userLogout = await userModel.findOne({ "chatId.chat": chatId })
+    userLogout.chatId = {
+        chat: chatId,
+        sessionId: false
+    }
+    const userLogged = await userLogout.save()
+    if (!userLogout) {
+        return res.status(HTTP.BAD_REQUEST).send({
+            status: false,
+            code: HTTP.BAD_REQUEST,
+            msg: "network error!",
+            data: {},
+        });
+    }
+    console.log("🚀 ~ logoutBotUser ~ userLogged:", userLogged)
+    return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "logout successfull!!",
+        data: {},
+    });
+}
+
+
 module.exports = {
+    logoutBotUser,
+    startBot,
     signUp,
     login,
     verify,

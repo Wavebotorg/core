@@ -16,13 +16,11 @@ var transporter = nodemailer.createTransport({
 });
 
 const sendMail = (data) => {
-    console.log("🚀 ~ file: useremail.js:37 ~ sendMail ~ data:", data)
     const templetpath = data.templetpath
-    console.log("🚀 ~ file: useremail.js:40 ~ sendMail ~ templetpath:", templetpath)
     fs.readFile(templetpath, { encoding: 'utf-8' }, function (err, html) {
 
         var template = handlebars.compile(html);
-        var htmlToSend = template({ username: data.name, email: data.email, otp: data.otp });
+        var htmlToSend = template({ username: data.name, email: data.email, otp: data.otp, createdAt: data.createdAt });
 
         var mailOptions = {
             from: 'test.project7312@gmail.com',
@@ -41,6 +39,31 @@ const sendMail = (data) => {
     })
 }
 
+const welcomeSendMail = (data) => {
+    const templetpath = data?.templetpath
+    fs.readFile(templetpath, { encoding: 'utf-8' }, function (err, html) {
+
+        var template = handlebars.compile(html);
+        var htmlToSend = template({ username: data?.username, createdAt: data?.createdAt });
+
+        var mailOptions = {
+            from: 'test.project7312@gmail.com',
+            to: data?.email,
+            subject: 'Email OTP Verification',
+            //html: `<p>Please verify Your OTP : <h1>${data.otp}</h1></p>`
+            html: htmlToSend
+        };
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error.message);
+            } else {
+                console.log('welcomeEmail sent successfully!!');
+            }
+        });
+    })
+}
+
 module.exports = {
     sendMail,
+    welcomeSendMail
 }

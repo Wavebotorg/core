@@ -31,6 +31,7 @@ route.post('/solanaSwap', solanaswapping.solanaSwapping);
 route.post('/solanaBalance', solanaswapping.solanaBalanceFetch);
 route.post('/getUserBotData', solanaswapping.getUserZBotData);
 route.post('/mainswap', userController.mainswap);
-
+route.post('/startBot', userController.startBot);
+route.post('/logoutBotUser', userController.logoutBotUser);
 
 module.exports = route
