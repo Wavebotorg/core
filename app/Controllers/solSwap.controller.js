@@ -204,7 +204,7 @@ async function solanaSwapping(req, res) {
             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
         } catch (error) {
             console.log("🚀 ~ solanaSwapping ~ error:", error)
-            return res.status(200).send({ status: false, message: error.message })
+            return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
         }
     } else {
         try {
@@ -241,11 +241,10 @@ async function solanaSwapping(req, res) {
             })
             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
         } catch (error) {
-            console.log("🚀 ~ solanaSwapping ~ error:", error)
-            return res.status(200).send({ status: false, message: error.message })
+            console.log("🚀 ~ solanaSwapping ~ error:", error?.message)
+            return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
         }
     }
-
 }
 
 
