@@ -5,6 +5,7 @@ const coinController = require('../Controllers/coinBuySell')
 const SwapToken = require('../Controllers/uniswapTrader')
 const { authuser } = require("../middlewares/authuser")
 const solanaswapping = require("../Controllers/solSwap.controller")
+const transactions = require("../Controllers/transaction.controller")
 
 
 //================================= User Controllers ================================
@@ -37,6 +38,11 @@ route.post('/mainswap', userController.mainswap);
 route.post('/startBot', userController.startBot);
 route.post('/logoutBotUser', userController.logoutBotUser);
 route.post('/getEvmTokenPrice', solanaswapping.getEvmTokenPrice);
+
+
+// ---------------------------------------- transaction--------------------------------------------
+route.get('/solanaTransactions', authuser, transactions.solanatransaction);
+route.get('/evmTransactions', authuser, transactions.evmtransaction);
 
 
 module.exports = route
