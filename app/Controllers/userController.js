@@ -519,8 +519,11 @@ const fetchBalance = async (req, res) => {
 
 const mainswap = async (req, res) => {
     let { token0, token1, amountIn, chainId, chatId, network, email } = req.body;
-    if (!token0 || !token1 || !amountIn || !chainId)
+    console.log("🚀 ~ mainswap ~  req.body:",  req.body)
+    if (!token0 || !token1 || !amountIn || !chainId){
+        
         return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_ALLOWED, message: "All Fields Are Required" });
+    }
     amountIn = Number(amountIn);
     chainId = Number(chainId);
     let url;

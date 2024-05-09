@@ -167,86 +167,236 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
 
 // ----------------------------------------- solana swapping controller --------------------------------
 
+// async function solanaSwapping(req, res) {
+//     const { input, output, chatId, amount, email, desBot } = req.body
+//     console.log("🚀 ~ solanaSwapping ~ req.body:", req.body)
+//     if (desBot) {
+//         try {
+
+//             console.log("------------ buy function run --------------------------------")
+//             const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+//             // res.send(inputInfo)
+//             const amountSOL = await ethers.utils.parseUnits(amount?.toFixed(9).toString(), 9);
+//             console.log("------------ amout --------------------------------")
+
+//             console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
+//             const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+//             const PK = Uint8Array.from(numbersArray);
+//             const mainWallet = Keypair.fromSecretKey(PK);
+
+//             const { txid, confirmTransaction } = await swapTokens(
+//                 input,
+//                 output,
+//                 amountSOL,
+//                 mainWallet,
+//                 walletDetails.solanawallet
+//             );
+//             if (confirmTransaction?.value?.err) {
+//                 return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+//             }
+//             const transactionCreated = await Txn.create({
+//                 userId: walletDetails?.id,
+//                 txid: txid,
+//                 amount: amount,
+//                 from: input,
+//                 to: output,
+//             })
+//             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+//         } catch (error) {
+//             console.log("🚀 ~ solanaSwapping ~ error:", error)
+//             return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
+//         }
+//     } else {
+//         try {
+//             console.log("------------ swap function run --------------------------------")
+//             const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
+//             const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
+//             console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
+//             if (!inputDesimals) {
+//                 return res.status(200).send({ status: false, message: "transaction failed!!" })
+//             }
+//             // res.send(inputInfo)
+//             const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
+//             console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
+//             const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+//             const PK = Uint8Array.from(numbersArray);
+//             const mainWallet = Keypair.fromSecretKey(PK);
+
+//             const { txid, confirmTransaction } = await swapTokens(
+//                 input,
+//                 output,
+//                 amountSOL,
+//                 mainWallet,
+//                 walletDetails.solanawallet
+//             );
+//             if (confirmTransaction?.value?.err) {
+//                 return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+//             }
+//             const transactionCreated = await Txn.create({
+//                 userId: walletDetails?.id,
+//                 txid: txid,
+//                 amount: amount,
+//                 from: input,
+//                 to: output,
+//             })
+//             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+//         } catch (error) {
+//             console.log("🚀 ~ solanaSwapping ~ error:", error?.message)
+//             return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
+//         }
+//     }
+// }
+
 async function solanaSwapping(req, res) {
-    const { input, output, chatId, amount, email, desBot } = req.body
-    console.log("🚀 ~ solanaSwapping ~ req.body:", req.body)
+    const { input, output, chatId, amount, email, desBot } = req.body;
+    console.log("🚀 ~ solanaSwapping ~ req.body:", req.body);
     if (desBot) {
         try {
+            console.log(
+                "------------ buy function run --------------------------------"
+            );
+            const walletDetails =
+                (chatId && (await getWalletInfo(chatId))) ||
+                (email && (await getWalletInfoByEmail(email)));
+            // res.send(inputInfo) 
+            const amountSOL = await ethers.utils.parseUnits(
+                amount?.toFixed(9).toString(),
+                9
+            );
 
-            console.log("------------ buy function run --------------------------------")
-            const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-            // res.send(inputInfo)
-            const amountSOL = await ethers.utils.parseUnits(amount?.toFixed(9).toString(), 9);
-            console.log("------------ amout --------------------------------")
-
-            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
-            const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
+            const numbersArray = walletDetails.solanaPK.split(",").map(Number);
             const PK = Uint8Array.from(numbersArray);
             const mainWallet = Keypair.fromSecretKey(PK);
 
-            const { txid, confirmTransaction } = await swapTokens(
+            const confirmTransactionDetails = await swapTokens(
                 input,
                 output,
                 amountSOL,
                 mainWallet,
                 walletDetails.solanawallet
             );
-            if (confirmTransaction?.value?.err) {
-                return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            console.log(
+                "🚀 ~ solanaSwapping ~ confirmTransactionDetails:",
+                confirmTransactionDetails
+            );
+            if (!confirmTransactionDetails) {
+                return res.status(500).send({
+                    status: false,
+                    message: "transaction not confirmed. Please try again later.",
+                });
             }
+
+            if (confirmTransactionDetails?.confirmTransaction?.value?.err) {
+                console.log(
+                    "🚀 ~ solanaSwapping ~ confirmTransactionDetails?.confirmTransaction?.value?.err:",
+                    confirmTransactionDetails?.confirmTransaction?.value?.err
+                );
+                return res.status(200).send({
+                    status: false,
+                    message:
+                        "due to network error transaction has been failed please try again later!!",
+                });
+            }
+            console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
             const transactionCreated = await Txn.create({
                 userId: walletDetails?.id,
-                txid: txid,
+                txid: confirmTransactionDetails?.txid,
                 amount: amount,
                 from: input,
                 to: output,
-            })
-            return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+            });
+            return res.status(200).send({
+                status: true,
+                message: "Transaction Successful!",
+                transactionCreated,
+            });
         } catch (error) {
-            console.log("🚀 ~ solanaSwapping ~ error:", error)
-            return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
+            console.log("🚀 ~ solanaSwapping ~ error:", error);
+            return res.status(200).send({
+                status: false,
+                message: "somthing has been wrong please try again after some time!!",
+            });
         }
     } else {
         try {
-            console.log("------------ swap function run --------------------------------")
-            const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-            const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
-            console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
+            console.log(
+                "------------ swap function run --------------------------------"
+            );
+            const walletDetails =
+                (chatId && (await getWalletInfo(chatId))) ||
+                (email && (await getWalletInfoByEmail(email)));
+            const inputDesimals = await getWalletInfoDes(
+                walletDetails?.solanawallet,
+                input
+            );
+            console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals);
             if (!inputDesimals) {
-                return res.status(200).send({ status: false, message: "transaction failed!!" })
+                return res
+                    .status(200)
+                    .send({ status: false, message: "transaction failed!!" });
             }
-            // res.send(inputInfo)
-            const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
-            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
-            const numbersArray = walletDetails.solanaPK.split(',').map(Number);
+            // res.send(inputInfo) 
+            const amountSOL = await ethers.utils.parseUnits(
+                amount.toString(),
+                inputDesimals
+            );
+            console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
+            const numbersArray = walletDetails.solanaPK.split(",").map(Number);
             const PK = Uint8Array.from(numbersArray);
             const mainWallet = Keypair.fromSecretKey(PK);
 
-            const { txid, confirmTransaction } = await swapTokens(
+            const confirmTransactionDetails = await swapTokens(
                 input,
                 output,
                 amountSOL,
                 mainWallet,
                 walletDetails.solanawallet
             );
-            if (confirmTransaction?.value?.err) {
-                return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
+            console.log(
+                "🚀 ~ solanaSwapping ~ confirmTransactionDetails:",
+                confirmTransactionDetails
+            );
+            if (!confirmTransactionDetails) {
+                return res.status(500).send({
+                    status: false,
+                    message: "transaction not confirmed. Please try again later.",
+                });
             }
+
+            if (confirmTransactionDetails?.confirmTransaction?.value?.err) {
+                console.log(
+                    "🚀 ~ solanaSwapping ~ confirmTransactionDetails?.confirmTransaction?.value?.err:",
+                    confirmTransactionDetails?.confirmTransaction?.value?.err
+                );
+                return res.status(200).send({
+                    status: false,
+                    message:
+                        "due to network error transaction has been failed please try again later!!",
+                });
+            }
+            console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
             const transactionCreated = await Txn.create({
                 userId: walletDetails?.id,
-                txid: txid,
+                txid: confirmTransactionDetails?.txid,
                 amount: amount,
                 from: input,
                 to: output,
-            })
-            return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
+            });
+            return res.status(200).send({
+                status: true,
+                message: "Transaction Successful!",
+                transactionCreated,
+            });
         } catch (error) {
-            console.log("🚀 ~ solanaSwapping ~ error:", error?.message)
-            return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
+            console.log("🚀 ~ solanaSwapping ~ error:", error);
+            return res.status(200).send({
+                status: false,
+                message: "somthing has been wrong please try again after some time!!",
+            });
         }
     }
 }
-
 
 // -------------------------------- solana balance fetch Api-------------------------------------------
 async function solanaBalanceFetch(req, res) {
