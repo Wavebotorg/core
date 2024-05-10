@@ -48,7 +48,7 @@ exports.getWalletInfo = async (chatId) => {
   }
 }
 exports.getWalletInfoByEmail = async (email) => {
-  // console.log("Fetching wallet information...");
+  console.log("Fetching wallet email information...");
   try {
     const user = await userModel.findOne({ email: email });
     if (!user) {
@@ -56,6 +56,7 @@ exports.getWalletInfoByEmail = async (email) => {
     }
     return {
       id: user?._id,
+      name: user?.name,
       wallet: user?.wallet,
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,

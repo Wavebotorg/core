@@ -1,18 +1,16 @@
 const { ethers } = require("ethers");
-const {abi: IUniswapV3PoolABI,} = require("@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json");
+const {
+  abi: IUniswapV3PoolABI,
+} = require("@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json");
 const {
   abi: SwapRouterABI,
 } = require("@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json");
-const {
-  getPoolImmutables,
-  getPoolState,
-  getWalletInfo,
-} = require("../../helpers");
+const { getPoolImmutables, getPoolState } = require("../../helpers");
 const ERC20ABI = require("../../abi.json");
+
 require("dotenv").config();
 
-const swapRouterAddress = '0xE592427A0AEce92De3Edee1F18E0157C05861564'; // arbi
-// const swapRouterAddress = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"; // poly
+const swapRouterAddress = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
 async function swapToken(
   token0,
@@ -20,23 +18,12 @@ async function swapToken(
   poolAddress,
   amountIn,
   chainId,
-  chatId
+  WALLET_ADDRESS,
+  WALLET_SECRET
 ) {
   try {
-    console.log("🚀 ~ swapToken ~ chatId:", chatId);
-    console.log("🚀 ~ swapToken ~ chainId:", chainId);
-    console.log("🚀 ~ swapToken ~ amountIn:", amountIn);
-    console.log("🚀 ~ swapToken ~ token1:", token1);
-    console.log("🚀 ~ swapToken ~ poolAddress:", poolAddress);
-    console.log("🚀 ~ swapToken ~ token0:", token0);
-
-    const walletInfo = await getWalletInfo(chatId);
-    console.log("🚀 ~ swapToken ~ walletInfo:", walletInfo);
-
-    const WALLET_ADDRESS = walletInfo.wallet;
-    console.log("🚀 ~ swapToken ~ WALLET_ADDRESS:", WALLET_ADDRESS);
-    const WALLET_SECRET = walletInfo.hashedPrivateKey;
     console.log("🚀 ~ swapToken ~ WALLET_SECRET:", WALLET_SECRET);
+    console.log("🚀 ~ swapToken ~ WALLET_ADDRESS:", WALLET_ADDRESS);
 
     const INFURA_URL_TESTNET_ARB = process.env.INFURA_URL_TESTNET_ARB;
     const INFURA_URL_TESTNET_ETH = process.env.INFURA_URL_TESTNET_ETH;
@@ -56,10 +43,7 @@ async function swapToken(
     } else if (chainId == 137) {
       provider = new ethers.providers.JsonRpcProvider(INFURA_URL_TESTNET_MATIC);
     } else {
-      console.error(
-        "Invalid input. Please provide 1, 2, or 3 as a command-line argument."
-      );
-      process.exit(1);
+      throw new Error("Invalid chainId provided.");
     }
 
     const poolContract = new ethers.Contract(
@@ -72,30 +56,59 @@ async function swapToken(
     const state = await getPoolState(poolContract);
 
     const wallet = new ethers.Wallet(WALLET_SECRET);
+    console.log(" ~ main ~ wallet:", wallet);
     const connectedWallet = wallet.connect(provider);
 
     const swapRouterContract = new ethers.Contract(
       swapRouterAddress,
       SwapRouterABI,
-      connectedWallet
+      provider
     );
 
-    const amountIns = ethers.utils.parseUnits(amountIn.toString(), 18);
+    async function getDecimals(address, wallet) {
+      const tokenContract = new ethers.Contract(address, ERC20ABI, wallet);
+      return await tokenContract.decimals();
+    }
 
+    // Fetch decimals for token0
+    const decimals0 = await getDecimals(token0, connectedWallet);
+    console.log("Decimals for token0:", decimals0);
+
+    // Fetch decimals for token1
+    const decimals1 = await getDecimals(token1, connectedWallet);
+    console.log("Decimals for token1:", decimals1);
+
+    const amountIns = ethers.utils.parseUnits(amountIn.toString(), decimals0);
+
+    // Approve token transfer
     const tokenContract0 = new ethers.Contract(
       token0,
       ERC20ABI,
       connectedWallet
     );
 
-    const datas = await tokenContract0
-      .connect(connectedWallet)
-      .approve(swapRouterAddress, amountIns);
+    // Increase the approval amount if needed
+    const approvalAmount = ethers.utils.parseUnits(
+      "100000", // Your approval amount
+      decimals0
+    );
 
+    // Approve the swapRouter to spend the tokens
+    const approvalResponse = await tokenContract0.approve(
+      swapRouterAddress,
+      approvalAmount
+    );
+
+    console.log("Approval Tx:", approvalResponse.hash);
+
+    // Wait for approval transaction to be confirmed
+    await approvalResponse.wait();
+
+    // Specify swap parameters
     const params = {
-      tokenIn: immutables.token0,
-      tokenOut: immutables.token1,
-      fee: immutables.fee,
+      tokenIn: token0, // Token to swap from
+      tokenOut: token1, // Token to receive
+      fee: 500, // Fee (0.05%)
       recipient: WALLET_ADDRESS,
       deadline: Math.floor(Date.now() / 1000) + 60 * 10,
       amountIn: amountIns,
@@ -103,25 +116,23 @@ async function swapToken(
       sqrtPriceLimitX96: 0,
     };
 
-    //const gasLimit = 30000000000; // Manually set gas limit
+    const gasLimit = 300000; // Adjust gas limit according to your requirements
 
-    try {
-      const transaction = await swapRouterContract.exactInputSingle(params, {
-          gasLimit: 75000, // Specify gas limit
+    // Perform the swap
+    const transaction = await swapRouterContract
+      .connect(connectedWallet)
+      .exactInputSingle(params, {
+        gasLimit: ethers.BigNumber.from(gasLimit),
       });
-      console.log("Transaction hash:", transaction.hash);
-      const receipt = await transaction.wait();
-      if (transaction) {
-        return transaction.hash;
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.log("===================> error from swaptoken", error);
-      return error;
+
+    console.log("Swap Tx:", transaction.hash);
+    if (transaction) {
+      return transaction.hash;
+    } else {
+      throw new Error("somthing has been wrong");
     }
   } catch (error) {
-    console.log("🚀 ~ swapToken ~ error:", error);
+    console.error("Error in main:", error);
   }
 }
 

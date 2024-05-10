@@ -883,9 +883,8 @@ const mainswap = async (req, res) => {
             break;
     }
     try {
-        const userData =
-            (chatId && (await getWalletInfo(chatId))) ||
-            (email && (await getWalletInfoByEmail(email)));
+        const userData = chatId && (await getWalletInfo(chatId)) || email && (await getWalletInfoByEmail(email));
+        console.log("🚀 ~ mainswap ~ userData:", userData)
         const poolAddress = await pooladress(token0, token1, chainId);
         if (poolAddress) {
             const executeSwapHash = await swapToken(
@@ -894,9 +893,8 @@ const mainswap = async (req, res) => {
                 poolAddress[0],
                 amountIn,
                 chainId,
-                chatId,
-                userData.hashedPrivateKey,
-                userData.wallet
+                userData.wallet,
+                userData.hashedPrivateKey
             );
             const executeSwap = url + executeSwapHash;
             if (executeSwap != null) {
