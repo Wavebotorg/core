@@ -495,6 +495,43 @@ const resetPassword = async (req, res) => {
         });
     }
 };
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmNewPassword } = req.body;
+        console.log("🚀 ~ changePassword ~ confirmNewPassword:", confirmNewPassword)
+        console.log("🚀 ~ changePassword ~ newPassword:", newPassword)
+        console.log("🚀 ~ changePassword ~ currentPassword:", currentPassword)
+        const email = req?.user?.email;
+        console.log("🚀 ~ changePassword ~ email:", email)
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "All fields are required." });
+        }
+        const findData = await userModel.findOne({ email: email });
+        if (!findData) {
+            return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_FOUND, msg: "User not found." });
+        }
+        bcrypt.compare(currentPassword, findData.password, async (err, result) => {
+            if (err) {
+                return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something went wrong.", error: err.message });
+            }
+            if (result) {
+                if (newPassword === confirmNewPassword) {
+                    const hashedPassword = await bcrypt.hash(newPassword, 10);
+                    await userModel.findOneAndUpdate({ _id: findData._id }, { password: hashedPassword });
+                    return res.status(HTTP.SUCCESS).send({ status: true, code: HTTP.SUCCESS, msg: "Password changed successfully." });
+                } else {
+                    return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "New password and confirm password do not match." });
+                }
+            } else {
+                return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.BAD_REQUEST, msg: "Current password is incorrect." });
+            }
+        });
+    } catch (error) {
+        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something went wrong.", error: error.message });
+    }
+};
+
+
 async function getData() {
     console.log(
         "=============================== update watchlist with API data ============================="
@@ -1003,6 +1040,7 @@ module.exports = {
     recentUsers,
     fetchBalance,
     mainswap,
+    changePassword
     //getWalletInfo,
 };
 // async function getSolanaWalletInfo(tokenAddress) {
