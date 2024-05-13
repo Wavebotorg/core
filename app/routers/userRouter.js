@@ -16,6 +16,7 @@ route.post("/forgetPassword", userController.ForgetPassword);
 route.post("/resetPassword", userController.resetPassword);
 route.post("/changePassword", authuser, userController.changePassword);
 route.post("/watchlist", authuser, userController.watchList);
+route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
