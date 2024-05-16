@@ -102,11 +102,15 @@ const signUp = async (req, res) => {
       }
       let saveData = await obj.save();
       delete saveData._doc.otp;
+      const token = jwt.sign({ _id: obj?._id }, process.env.SECRET_KEY, {
+        expiresIn: "1d",
+      });
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
         msg: "Register Successfully",
         data: saveData,
+        token,
       });
     } else {
       return res.status(HTTP.SUCCESS).send({

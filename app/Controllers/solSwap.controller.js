@@ -3,7 +3,7 @@ const {
   Keypair,
   VersionedTransaction,
 } = require("@solana/web3.js");
-const {} = require("@solana/spl-token");
+// const {} = require("@solana/spl-token");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
@@ -44,6 +44,8 @@ async function getSolanaWalletInformation(walletaddress) {
 const apikey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjFjNmIxYWYyLTE0NjUtNGJiYy1hMTY1LWM3ZjMzMGNkY2EyZiIsIm9yZ0lkIjoiMzkwODI0IiwidXNlcklkIjoiNDAxNTkxIiwidHlwZUlkIjoiYzNjYTI5MzQtYTU5MS00YjQ4LTk0MjQtOTg0ZWVkMzZlMTA5IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTQ3OTExNDYsImV4cCI6NDg3MDU1MTE0Nn0.x5unFuOwUE_Mz366qua85jkp8a8QBdcj4QwNnrls6ao";
 async function getWalletInfoDes(tokenAddress, from) {
+  console.log("🚀 ~ getWalletInfoDes ~ from:", from);
+  console.log("🚀 ~ getWalletInfoDes ~ tokenAddress:", tokenAddress);
   try {
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
@@ -55,6 +57,7 @@ async function getWalletInfoDes(tokenAddress, from) {
       address: tokenAddress,
     });
     const convertRaw = response1?.raw;
+    console.log("🚀 ~ getWalletInfoDes ~ convertRaw:", convertRaw);
     const desimal = await convertRaw?.tokens?.find(
       (item) => item?.mint == from
     );
@@ -268,7 +271,7 @@ async function solanaSwapping(req, res) {
         confirmTransactionDetails
       );
       if (!confirmTransactionDetails) {
-        return res.status(500).send({
+        return res.status(200).send({
           status: false,
           message: "transaction not confirmed. Please try again later.",
         });
@@ -313,6 +316,7 @@ async function solanaSwapping(req, res) {
       const walletDetails =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
+      console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails);
       const inputDesimals = await getWalletInfoDes(
         walletDetails?.solanawallet,
         input
@@ -345,7 +349,7 @@ async function solanaSwapping(req, res) {
         confirmTransactionDetails
       );
       if (!confirmTransactionDetails) {
-        return res.status(500).send({
+        return res.status(200).send({
           status: false,
           message: "transaction not confirmed. Please try again later.",
         });
