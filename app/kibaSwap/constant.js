@@ -18,7 +18,7 @@ const ChainName = {
   SCROLL: `scroll`,
 };
 const desCode = {
-  MAINNET: `0x1 `,
+  MAINNET: `0x1`,
   BSC: `0x38`,
   ARBITRUM: `0xa4b1`,
   MATIC: `0x89`,

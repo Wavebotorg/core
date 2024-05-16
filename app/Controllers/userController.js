@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { default: Moralis } = require("moralis");
 const axios = require("axios");
 const userModel = require("../Models/userModel");
 const ethers = require("ethers");
@@ -17,6 +18,7 @@ const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { swapToken } = require("../Controllers/uniswapTrader");
 const { decrypt } = require("mongoose-field-encryption");
 const TxnEvm = require("../Models/TXNevmSwap");
+
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
   // Step 1: Generate a new Solana keypair
@@ -752,159 +754,68 @@ const removeCoinWatchlist = async (req, res) => {
     });
   }
 };
+
+// fetch balance
+
 const fetchBalance = async (req, res) => {
   try {
     if (req.body.chatId) {
-      const { chatId } = req.body;
-      if (!chatId) {
-        return res.status(400).json({ error: "Chat ID is required" });
+      const { chatId, chainId } = req.body;
+      const userfind = await getWalletInfo(chatId);
+      console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind);
+
+      if (!Moralis.Core.isStarted) {
+        await Moralis.start({
+          apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+        });
       }
-      const user = await userModel.findOne({
-        chatId: { chat: chatId, sessionId: true },
+      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice(
+        {
+          chain: chainId,
+          address: userfind.wallet,
+        }
+      );
+      const tokens = response?.response?.result;
+
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.OK,
+        message: "Here is token",
+        data: tokens?.slice(0, 5),
       });
-      if (!user || !user.wallet) {
-        return res
-          .status(404)
-          .json({ error: "User not found or wallet address not available" });
-      }
-      const wallet = user.wallet;
-      const baseURL =
-        "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
-      const data = {
-        jsonrpc: "2.0",
-        method: "alchemy_getTokenBalances",
-        headers: { "Content-Type": "application/json" },
-        params: [`${wallet}`],
-        id: 42,
-      };
-      const config = {
-        method: "post",
-        url: baseURL,
-        headers: { "Content-Type": "application/json" },
-        data: JSON.stringify(data),
-      };
-      const response = await axios(config);
-      const balances = response.data.result;
-      const contractAddresses = balances.tokenBalances
-        .filter((token) => token.tokenBalance !== 0)
-        .map((token) => token.contractAddress);
-      const metadataPromises = contractAddresses.map(
-        async (contractAddress) => {
-          const options = {
-            method: "POST",
-            url: baseURL,
-            headers: {
-              accept: "application/json",
-              "content-type": "application/json",
-            },
-            data: {
-              id: 1,
-              jsonrpc: "2.0",
-              method: "alchemy_getTokenMetadata",
-              params: [contractAddress],
-            },
-          };
-          return axios.request(options);
-        }
-      );
-      const metadataResponses = await Promise.all(metadataPromises);
-      const tokensData = metadataResponses
-        .map((metadataResponse, index) => {
-          const balance = balances?.tokenBalances[index]?.tokenBalance;
-          if (typeof balance !== "undefined") {
-            const metadata = metadataResponse.data;
-            if (metadata?.result) {
-              const balanceValue =
-                balance / Math.pow(10, metadata.result.decimals);
-              const formattedBalance = balanceValue.toFixed(5);
-              return {
-                name: metadata.result.name,
-                logo: metadata.result.logo,
-                balance: `${formattedBalance}`,
-                decimals: metadata.result.decimals,
-              };
-            }
-          }
-          return null;
-        })
-        .filter((token) => token !== null);
-      res.status(200).json(tokensData);
     } else if (req.body.email) {
-      const { email } = req.body; // Corrected from chatId to email
-      if (!email) {
-        return res.status(400).json({ error: "Email is required" }); // Corrected from Chat ID to Email
+      const { email, chainId } = req.body;
+      const userfind = await userModel.findOne({ email: email });
+      console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind.wallet);
+
+      if (!Moralis.Core.isStarted) {
+        await Moralis.start({
+          apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+        });
       }
-      const user = await userModel.findOne({ email: email }); // Corrected from chatId to email
-      if (!user || !user.wallet) {
-        return res
-          .status(404)
-          .json({ error: "User not found or wallet address not available" });
-      }
-      const wallet = user.wallet;
-      const baseURL =
-        "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
-      const data = {
-        jsonrpc: "2.0",
-        method: "alchemy_getTokenBalances",
-        headers: { "Content-Type": "application/json" },
-        params: [`${wallet}`],
-        id: 42,
-      };
-      const config = {
-        method: "post",
-        url: baseURL,
-        headers: { "Content-Type": "application/json" },
-        data: JSON.stringify(data),
-      };
-      const response = await axios(config);
-      const balances = response.data.result;
-      const contractAddresses = balances.tokenBalances
-        .filter((token) => token.tokenBalance !== 0)
-        .map((token) => token.contractAddress);
-      const metadataPromises = contractAddresses.map(
-        async (contractAddress) => {
-          const options = {
-            method: "POST",
-            url: baseURL,
-            headers: {
-              accept: "application/json",
-              "content-type": "application/json",
-            },
-            data: {
-              id: 1,
-              jsonrpc: "2.0",
-              method: "alchemy_getTokenMetadata",
-              params: [contractAddress],
-            },
-          };
-          return axios.request(options);
+      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice(
+        {
+          chain: chainId,
+          address: userfind.wallet,
         }
       );
-      const metadataResponses = await Promise.all(metadataPromises);
-      const tokensData = metadataResponses
-        .map((metadataResponse, index) => {
-          const balance = balances?.tokenBalances[index]?.tokenBalance;
-          if (typeof balance !== "undefined") {
-            const metadata = metadataResponse.data;
-            if (metadata?.result) {
-              const balanceValue =
-                balance / Math.pow(10, metadata.result.decimals);
-              const formattedBalance = balanceValue.toFixed(5);
-              return {
-                name: metadata.result.name,
-                logo: metadata.result.logo,
-                balance: `${formattedBalance}`,
-              };
-            }
-          }
-          return null;
-        })
-        .filter((token) => token !== null);
-      res.status(200).json(tokensData);
+      const tokens = response?.response?.result;
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.OK,
+        message: "Here is token",
+        data: tokens.slice(0, 5),
+      });
     }
   } catch (error) {
-    console.error("Error fetching balance:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.log("🚀 ~ appGetTokenPrices ~ error:", error);
+    // res.status(500).json({ error: 'Error fetching token prices' });
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      message: "Something went wrong!",
+      data: {},
+    });
   }
 };
 const mainswap = async (req, res) => {
