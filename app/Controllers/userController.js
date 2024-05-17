@@ -760,8 +760,10 @@ const removeCoinWatchlist = async (req, res) => {
 const fetchBalance = async (req, res) => {
   try {
     if (req.body.chatId) {
-      const { chatId, chainId } = req.body;
-      const userfind = await getWalletInfo(chatId);
+      const { chatId, chainId, email } = req.body;
+      const userfind =
+        (chatId && (await getWalletInfo(chatId))) ||
+        (email && (await getWalletInfoByEmail(email)));
       console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind);
 
       if (!Moralis.Core.isStarted) {
