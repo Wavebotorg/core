@@ -1,13 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const userModel = require("../Models/userModel");
-const adminController = require("../Controllers/adminController")
+const adminController = require("../Controllers/adminController");
 const { authadmin } = require("../middlewares/authuser");
-
+const transactions = require("../Controllers/transaction.controller");
 
 /* GET users listing. */
-router.get('/', function (req, res, next) {
-    res.send('respond with a resource');
+router.get("/", function (req, res, next) {
+  res.send("respond with a resource");
 });
 
 /* LOGIN */
@@ -35,7 +35,11 @@ router.get("/showUser/:id", authadmin, adminController.showUser);
 router.post("/deleteUser/:id", authadmin, adminController.deleteUser);
 
 /* UPDATE USER STATUS */
-router.get("/updateUserStatus/:userId", authadmin, adminController.updateUserStatus);
+router.get(
+  "/updateUserStatus/:userId",
+  authadmin,
+  adminController.updateUserStatus
+);
 
 /* FORGOT PASSWORD */
 router.post("/forgotPassword", adminController.forgotPassword);
@@ -46,4 +50,9 @@ router.post("/verifyOTP", adminController.verifyOTP);
 /* UPDATE PASSWORD */
 router.post("/updatePassword", adminController.updatePassword);
 
+// get evm transactions
+router.post("/evmTransactions", authadmin, transactions.evmtransaction);
+
+// get solana transactions
+router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
 module.exports = router;

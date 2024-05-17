@@ -50,8 +50,8 @@ route.post("/logoutBotUser", userController.logoutBotUser);
 route.post("/getEvmTokenPrice", solanaswapping.getEvmTokenPrice);
 
 // ---------------------------------------- transaction--------------------------------------------
-route.get("/solanaTransactions", authuser, transactions.solanatransaction);
-route.get("/evmTransactions", authuser, transactions.evmtransaction);
+route.post("/solanaTransactions", authuser, transactions.solanatransaction);
+route.post("/evmTransactions", authuser, transactions.evmtransaction);
 
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);
