@@ -6,12 +6,22 @@ function getProvider(chain, chainId) {
   let providerUrl = null;
   switch (chain) {
     case 42161:
-      providerUrl =
-        "https://arb-mainnet.g.alchemy.com/v2/z2GyrrgTOYH4JlidpAs_2Cy-Gz1cHudl";
+      providerUrl = process.env.INFURA_URL_TESTNET_ARB;
       break;
     case 137:
-      providerUrl =
-        "https://polygon-mainnet.g.alchemy.com/v2/3c-dW_b314EAFqq6dzVeL9xoYO2n6o7A";
+      providerUrl = process.env.INFURA_URL_TESTNET_MATIC;
+      break;
+    case 8453:
+      providerUrl = process.env.INFURA_URL_TESTNET_BASECHAIN;
+      break;
+    case 10:
+      providerUrl = process.env.INFURA_URL_TESTNET_OPTIMISM;
+      break;
+    case 43114:
+      providerUrl = process.env.INFURA_URL_TESTNET_AVALANCHE;
+      break;
+    case 56:
+      providerUrl = process.env.INFURA_URL_TESTNET_BSC;
       break;
 
     default:
