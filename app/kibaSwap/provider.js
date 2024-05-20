@@ -5,6 +5,9 @@ function getProvider(chain, chainId) {
   // Replace this with a RPC of your choice
   let providerUrl = null;
   switch (chain) {
+    case 1:
+      providerUrl = process.env.INFURA_URL_TESTNET_ETH;
+      break;
     case 42161:
       providerUrl = process.env.INFURA_URL_TESTNET_ARB;
       break;
