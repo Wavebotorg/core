@@ -1,32 +1,33 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const txnEvmSwap = new mongoose.Schema({
+const txnEvmSwap = new mongoose.Schema(
+  {
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
     },
     txid: {
-        type: String
+      type: String,
     },
     amount: {
-        type: Number,
+      type: Number,
     },
     from: {
-        type: String
+      type: String,
     },
     to: {
-        type: String
+      type: String,
     },
     network: {
-        type: String,
-        default: "arbitrum"
+      type: String,
     },
     chainId: {
-        type: Number,
-    }
-}, { timestamps: true })
+      type: Number,
+    },
+  },
+  { timestamps: true }
+);
 
-const TxnEvm = mongoose.model("TxnEvm", txnEvmSwap)
+const TxnEvm = mongoose.model("TxnEvm", txnEvmSwap);
 
-
-module.exports = TxnEvm
+module.exports = TxnEvm;

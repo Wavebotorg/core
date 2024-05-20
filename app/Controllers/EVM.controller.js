@@ -4,6 +4,8 @@ const { getSigner } = require("../kibaSwap/signer");
 const { postSwapRouteV1 } = require("../../encodeSwapRoute");
 const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
 const HTTP = require("../../constants/responseCode.constant");
+const TxnEvm = require("../Models/TXNevmSwap");
+const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -91,12 +93,12 @@ async function EVMSwapMain(req, res) {
     // console.log(`Encoded data: ${encodedSwapData}`);
     console.log(`Router contract address: ${routerContract}`);
     const gasPrice = await signer.getGasPrice();
-    console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice)
+    console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice);
     const gasEstimate = await signer.estimateGas({
       to: routerContract,
       data: encodedSwapData,
     });
-    console.log("🚀 ~ EVMSwapMain ~ gasEstimate:", gasEstimate)
+    console.log("🚀 ~ EVMSwapMain ~ gasEstimate:", gasEstimate);
     const executeSwapTx = await signer.sendTransaction({
       data: encodedSwapData,
       from: signerAddress,
@@ -116,7 +118,19 @@ async function EVMSwapMain(req, res) {
         message: "Somthing has been wrong please try again!!",
       });
     }
+    const walletDetails =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
 
+    await TxnEvm.create({
+      userId: walletDetails?.id,
+      txid: executeSwapTxReceipt?.transactionHash,
+      amount: amount,
+      from: tokenIn,
+      to: tokenOut,
+      network: chainId,
+      chainId: chain,
+    });
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
