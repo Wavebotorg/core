@@ -150,7 +150,6 @@ const login = async (req, res) => {
         data: {},
       });
     if (chatId) {
-      // const user = await userModel.find({ chatId: chatId });
       await userModel.updateMany(
         { "chatId.chat": chatId },
         { $set: { "chatId.sessionId": false } }
@@ -175,10 +174,12 @@ const login = async (req, res) => {
           expiresIn: "1d",
         }); // Token expires in 30 days
         const updatedChatId = chatId || null;
-        findUser.chatId = {
-          chat: updatedChatId,
-          sessionId: true,
-        };
+        if (chatId) {
+          findUser.chatId = {
+            chat: updatedChatId,
+            sessionId: true,
+          };
+        }
         await findUser.save();
         if (chatId) {
           const newUser = findUser.chatingId.find(
