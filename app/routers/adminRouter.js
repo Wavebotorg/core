@@ -50,9 +50,18 @@ router.post("/verifyOTP", adminController.verifyOTP);
 /* UPDATE PASSWORD */
 router.post("/updatePassword", adminController.updatePassword);
 
+// get all sol and evm transactions
+router.post("/allTransactions", authadmin, transactions.allTransactionHistory);
+
 // get evm transactions
 router.post("/evmTransactions", authadmin, transactions.evmtransaction);
 
 // get solana transactions
 router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
+
+//get solana transaction count
+router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);
+
+// get evm transactions count
+router.get("/evmCount", authadmin, transactions.evmTransactionsCount);
 module.exports = router;
