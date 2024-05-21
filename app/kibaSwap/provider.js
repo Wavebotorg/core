@@ -26,9 +26,6 @@ function getProvider(chain, chainId) {
     case 56:
       providerUrl = process.env.INFURA_URL_TESTNET_BSC;
       break;
-    case 59144:
-      providerUrl = process.env.INFURA_URL_TESTNET_LINEA;
-      break;
     case 324:
       providerUrl = process.env.INFURA_URL_TESTNET_ZKSYNC;
       break;
@@ -38,7 +35,6 @@ function getProvider(chain, chainId) {
     case 250:
       providerUrl = process.env.INFURA_URL_TESTNET_FANTOM;
       break;
-
     default:
       break;
   }
