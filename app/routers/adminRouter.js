@@ -59,9 +59,12 @@ router.post("/evmTransactions", authadmin, transactions.evmtransaction);
 // get solana transactions
 router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
 
-//get solana transaction count
-router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);
+// get all transactions count
+router.get("/totalTransactionsCount", authadmin, transactions.totalTransactionCount);
 
-// get evm transactions count
-router.get("/evmCount", authadmin, transactions.evmTransactionsCount);
+// //get solana transaction count
+// router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);
+
+// // get evm transactions count
+// router.get("/evmCount", authadmin, transactions.evmTransactionsCount);
 module.exports = router;

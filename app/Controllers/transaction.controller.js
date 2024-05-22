@@ -171,6 +171,29 @@ async function evmTransactionsCount(req, res) {
     transactions,
   });
 }
+async function totalTransactionCount(req, res) {
+  const evm = await TxnEvm.find().countDocuments();
+  console.log("🚀 ~ totalTransactionCount ~ evm:", evm);
+  const sol = await Txn.find().countDocuments();
+  console.log("🚀 ~ totalTransactionCount ~ sol:", sol);
+  const count = {
+    solCount: sol,
+    evmCount: evm,
+  };
+  if (evm && sol) {
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "transactions fetch!!",
+      count,
+    });
+  }
+  return res.status(HTTP.SUCCESS).send({
+    status: false,
+    code: HTTP.UNAUTHORIZED,
+    msg: "something went wrong!!",
+  });
+}
 
 module.exports = {
   solanatransaction,
@@ -178,4 +201,5 @@ module.exports = {
   solanaTransactionsCount,
   evmTransactionsCount,
   allTransactionHistory,
+  totalTransactionCount,
 };
