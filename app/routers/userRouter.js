@@ -51,7 +51,7 @@ route.post("/getEvmTokenPrice", solanaswapping.getEvmTokenPrice);
 
 // ---------------------------------------- transaction--------------------------------------------
 route.post("/solanaTransactions", authuser, transactions.solanatransaction);
-route.post("/evmTransactions", authuser, transactions.evmtransaction);
+route.post("/transactions", authuser, transactions.evmtransaction);
 
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);

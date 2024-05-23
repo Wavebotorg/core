@@ -33,6 +33,7 @@ async function solanatransaction(req, res) {
         console.log(
           "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a solana transaction"
         );
+
         return res.status(HTTP.SUCCESS).send({
           status: false,
           code: HTTP.UNAUTHORIZED,
@@ -55,7 +56,7 @@ async function solanatransaction(req, res) {
         return res.status(HTTP.SUCCESS).send({
           status: false,
           code: HTTP.UNAUTHORIZED,
-          msg: "somehthing has been wrong !!",
+          msg: "somehthing has been wrong!!",
         });
       }
 
@@ -71,7 +72,7 @@ async function solanatransaction(req, res) {
   }
 }
 async function evmtransaction(req, res) {
-  const userId = req.body?.id;
+  const userId = req?.user._id || req.body?.id;
   const { chainId } = req.body;
   console.log("🚀 ~ evmtransaction ~ chainId:", chainId);
   const id = userId || req?.user?._id;
