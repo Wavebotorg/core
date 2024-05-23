@@ -24,6 +24,9 @@ const txnEvmSwap = new mongoose.Schema(
     chainId: {
       type: Number,
     },
+    method: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

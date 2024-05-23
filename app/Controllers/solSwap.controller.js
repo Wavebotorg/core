@@ -10,6 +10,7 @@ const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
 const userModel = require("../Models/userModel");
 const Txn = require("../Models/Txn.model");
+const TxnEvm = require("../Models/TXNevmSwap");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
 // const provider = new ethers
@@ -238,7 +239,8 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
 // }
 
 async function solanaSwapping(req, res) {
-  const { input, output, chatId, amount, email, desBot } = req.body;
+  const { input, output, chatId, amount, email, desBot, method } = req.body;
+  console.log("🚀 ~ solanaSwapping ~ method:", method);
   console.log("🚀 ~ solanaSwapping ~ req.body:", req.body);
   if (desBot) {
     try {
@@ -289,12 +291,15 @@ async function solanaSwapping(req, res) {
         });
       }
       console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
-      const transactionCreated = await Txn.create({
+      const transactionCreated = await TxnEvm.create({
         userId: walletDetails?.id,
         txid: confirmTransactionDetails?.txid,
         amount: amount,
         from: input,
         to: output,
+        network: "solana",
+        chainId: 19999,
+        method: method,
       });
       return res.status(200).send({
         status: true,
@@ -367,13 +372,20 @@ async function solanaSwapping(req, res) {
         });
       }
       console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
-      const transactionCreated = await Txn.create({
+      const transactionCreated = await TxnEvm.create({
         userId: walletDetails?.id,
         txid: confirmTransactionDetails?.txid,
         amount: amount,
         from: input,
         to: output,
+        network: "solana",
+        chainId: 19999,
+        method: method,
       });
+      console.log(
+        "🚀 ~ solanaSwapping ~ transactionCreated:",
+        transactionCreated
+      );
       return res.status(200).send({
         status: true,
         message: "Transaction Successful!",

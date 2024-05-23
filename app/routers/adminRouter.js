@@ -51,16 +51,20 @@ router.post("/verifyOTP", adminController.verifyOTP);
 router.post("/updatePassword", adminController.updatePassword);
 
 // get all sol and evm transactions
-router.post("/allTransactions", authadmin, transactions.allTransactionHistory);
+// router.post("/allTransactions", authadmin, transactions.allTransactionHistory);
 
 // get evm transactions
-router.post("/evmTransactions", authadmin, transactions.evmtransaction);
+router.post("/transactions", authadmin, transactions.evmtransaction);
 
 // get solana transactions
-router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
+// router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
 
 // get all transactions count
-router.get("/totalTransactionsCount", authadmin, transactions.totalTransactionCount);
+router.get(
+  "/totalTransactionsCount",
+  authadmin,
+  transactions.totalTransactionCount
+);
 
 // //get solana transaction count
 // router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);

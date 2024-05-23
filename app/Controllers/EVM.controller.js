@@ -18,6 +18,7 @@ async function EVMSwapMain(req, res) {
       email,
       chatId,
       desCode,
+      method,
     } = req.body;
     if (!tokenIn || !tokenOut || !chainId || !amount || !chain || !desCode) {
       return res.status(HTTP.SUCCESS).send({
@@ -130,6 +131,7 @@ async function EVMSwapMain(req, res) {
       to: tokenOut,
       network: chainId,
       chainId: chain,
+      method: method,
     });
     return res.status(HTTP.SUCCESS).send({
       status: true,

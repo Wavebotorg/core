@@ -81,7 +81,9 @@ async function evmtransaction(req, res) {
     const transactions = await TxnEvm.find({
       userId: id,
       chainId: chainId,
-    }).select("-userId");
+    })
+      .select("-userId")
+      .sort({ createdAt: -1 });
     if (!transactions) {
       console.log(
         "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
@@ -96,7 +98,9 @@ async function evmtransaction(req, res) {
   } else if (userId) {
     const transactions = await TxnEvm.find({
       userId: id,
-    }).select("-userId");
+    })
+      .select("-userId")
+      .sort({ createdAt: -1 });
     if (!transactions) {
       console.log(
         "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
@@ -111,7 +115,9 @@ async function evmtransaction(req, res) {
   } else if (chainId) {
     const transactions = await TxnEvm.find({
       chainId: chainId,
-    }).select("-userId");
+    })
+      .select("-userId")
+      .sort({ createdAt: -1 });
     if (!transactions) {
       console.log(
         "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
@@ -124,7 +130,9 @@ async function evmtransaction(req, res) {
       transactions,
     });
   } else {
-    const transactions = await TxnEvm.find().select("-userId");
+    const transactions = await TxnEvm.find()
+      .select("-userId")
+      .sort({ createdAt: -1 });
     if (!transactions) {
       console.log(
         "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
