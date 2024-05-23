@@ -72,7 +72,7 @@ async function solanatransaction(req, res) {
   }
 }
 async function evmtransaction(req, res) {
-  const userId = req?.user._id || req.body?.id;
+  const userId = req.body?.id;
   const { chainId } = req.body;
   console.log("🚀 ~ evmtransaction ~ chainId:", chainId);
   const id = userId || req?.user?._id;
