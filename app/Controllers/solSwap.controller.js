@@ -251,7 +251,7 @@ async function solanaSwapping(req, res) {
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
       // res.send(inputInfo)
-      const amountSOL = await ethers.utils.parseUnits(
+      const amountSOL = await ethers.utils.parseUnits(  
         amount?.toFixed(9).toString(),
         9
       );
@@ -406,7 +406,7 @@ async function solanaBalanceFetch(req, res) {
   const { chatId, email } = req.body;
   try {
     if (chatId) {
-      const walletDetails = await getWalletInfo(chatId);
+      const walletDetails = await getWalletInfo(chatId);  
       if (!walletDetails) {
         return res.status(HTTP.SUCCESS).send({
           status: false,

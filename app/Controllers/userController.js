@@ -209,6 +209,7 @@ const login = async (req, res) => {
           code: HTTP.SUCCESS,
           msg: "Login Successfully",
           token: token,
+          email: findUser?.email,
         });
       } else {
         return res.status(HTTP.SUCCESS).send({
@@ -789,6 +790,7 @@ const fetchBalance = async (req, res) => {
     } else if (req.body.email) {
       const { email, chainId } = req.body;
       const userfind = await userModel.findOne({ email: email });
+
       console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind.wallet);
 
       if (!Moralis.Core.isStarted) {
