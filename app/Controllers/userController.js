@@ -209,7 +209,7 @@ const login = async (req, res) => {
           code: HTTP.SUCCESS,
           msg: "Login Successfully",
           token: token,
-          email: findUser?.email,
+          userId: findUser?._id,
         });
       } else {
         return res.status(HTTP.SUCCESS).send({
@@ -789,6 +789,7 @@ const fetchBalance = async (req, res) => {
       });
     } else if (req.body.email) {
       const { email, chainId } = req.body;
+      console.log("🚀 ~ fetchBalance ~ email:", email)
       const userfind = await userModel.findOne({ email: email });
 
       console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind.wallet);
