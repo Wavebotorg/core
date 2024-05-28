@@ -7,6 +7,7 @@ const { authuser } = require("../middlewares/authuser");
 const solanaswapping = require("../Controllers/solSwap.controller");
 const transactions = require("../Controllers/transaction.controller");
 const kyberEVM = require("../Controllers/EVM.controller");
+const qrCode = require("../Controllers/QrCodeController");
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -56,4 +57,6 @@ route.post("/transactions", authuser, transactions.evmtransaction);
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);
 
+// --------------------------------- qr code -------------------------------------------------------
+route.post("/getQrCode", qrCode.getQrCode);
 module.exports = route;
