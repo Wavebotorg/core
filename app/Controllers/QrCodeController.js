@@ -3,6 +3,9 @@ const HTTP = require("../../constants/responseCode.constant");
 const path = require("path");
 const fs = require("fs");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
+
+const qrCodeFolder = path.join(__dirname, "..", "..", "public", "qrcodes");
+
 async function getQrCode(req, res) {
   const { chatId, email, wallet } = req.body;
   if (!(chatId || email)) {
@@ -23,8 +26,6 @@ async function getQrCode(req, res) {
       message: "wallet address not found!!",
     });
   }
-  // Define the folder to store QR code images
-  const qrCodeFolder = path.join(__dirname, "qrcodes");
 
   // Ensure the folder exists
   if (!fs.existsSync(qrCodeFolder)) {
