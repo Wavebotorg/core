@@ -64,6 +64,7 @@ async function getQrCode(req, res) {
     code: HTTP.SUCCESS,
     message: "qrCode generated!!",
     path: `https://wavebot-191945f71768.herokuapp.com/qrcodes/${walletAddress}.png`,
+    walletAddress: walletAddress,
   });
 }
 module.exports = { getQrCode };
