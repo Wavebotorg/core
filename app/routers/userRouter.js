@@ -8,6 +8,7 @@ const solanaswapping = require("../Controllers/solSwap.controller");
 const transactions = require("../Controllers/transaction.controller");
 const kyberEVM = require("../Controllers/EVM.controller");
 const qrCode = require("../Controllers/QrCodeController");
+const transferEvm = require("../Controllers/transferToken.controller");
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -59,4 +60,7 @@ route.post("/EVMswap", kyberEVM.EVMSwapMain);
 
 // --------------------------------- qr code -------------------------------------------------------
 route.post("/getQrCode", qrCode.getQrCode);
+
+// ------------------------------------------- EVM token transfer api--------------------------------
+route.post("/transferEvmToken", transferEvm.sendERC20Token);
 module.exports = route;
