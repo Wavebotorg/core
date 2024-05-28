@@ -54,12 +54,6 @@ async function getQrCode(req, res) {
       }
     );
 
-    // Generate QR Code and get it as a data URL
-    QRCode.toDataURL(walletAddress, function (err, url) {
-      if (err) throw err;
-      console.log(url);
-    });
-
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
