@@ -94,7 +94,8 @@ async function EVMSwapMain(req, res) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "Transaction does not approve!!",
+        message:
+          "Transaction does not approvev make sure you have enough fund or gas fee!!",
       });
     }
 
