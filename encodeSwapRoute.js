@@ -31,9 +31,9 @@ async function postSwapRouteV1(
 
   // Get the signer's address
   const signer = await getSigner(chain, chainId, email, chatId);
-  console.log("🚀 ~ postSwapRouteV1 ~ signer:", signer);
+  // console.log("🚀 ~ postSwapRouteV1 ~ signer:", signer);
   if (signer) {
-    console.log("🚀 ~ postSwapRouteV1 ~ signe successfull!!");
+    console.log("🚀 ~ postSwapRouteV1 ~ signed successfull!!");
   }
   const signerAddress = await signer.getAddress();
   console.log("🚀 ~ postSwapRouteV1 ~ signerAddress:", signerAddress);
@@ -52,7 +52,9 @@ async function postSwapRouteV1(
       },
     });
 
-    console.log(`[V1] POST Response:`, encodeResponse?.data?.data);
+    // console.log(`[V1] POST Response:`, encodeResponse?.data?.data);
+    console.log(`encoded data get successfullu!!`);
+
     return encodeResponse?.data?.data;
   } catch (error) {
     console.log(error);

@@ -6,6 +6,8 @@ const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
 const HTTP = require("../../constants/responseCode.constant");
 const TxnEvm = require("../Models/TXNevmSwap");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
+const { getProvider } = require("../kibaSwap/provider");
+const { ethers } = require("ethers");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -27,20 +29,25 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
-    const desimals = await getEvmTokenMetadata(tokenIn, desCode);
-    if (!desimals || desimals == 0) {
-      console.log("🚀 ~ EVMSwapMain ~ desimals not found:");
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.BAD_REQUEST,
-        message: "somthing has been wrong",
-      });
-    }
-    console.log("🚀 ~ EVMSwapMain ~ desimals:", desimals);
+    // const desimals = await getEvmTokenMetadata(tokenIn, desCode);
+    const provider = getProvider(chain, chainId);
+    // find wallet details
+    const walletDetails =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+    // Create a wallet instance
+    const wallet = new ethers.Wallet(walletDetails?.hashedPrivateKey, provider);
+
+    // Load the token contract
+    const abi = ["function decimals() view returns (uint8)"];
+    const tokenContract = new ethers.Contract(tokenIn, abi, wallet);
+    // calculate desimals
+    const decimals = await tokenContract.decimals();
+    console.log("🚀 ~ sendERC20Token ~ decimals:", decimals);
     const swapData = await postSwapRouteV1(
       tokenIn,
       tokenOut,
-      desimals,
+      decimals,
       chainId,
       amount,
       chain,
@@ -57,11 +64,13 @@ async function EVMSwapMain(req, res) {
     }
     const encodedSwapData = swapData?.data;
     const routerContract = swapData?.routerAddress;
-    console.log("🚀 ~ EVMSwapMain ~ routerContract:", routerContract);
+    // console.log("🚀 ~ EVMSwapMain ~ routerContract:", routerContract);
+    console.log("🚀 ~ EVMSwapMain ~ routerContract: get successfull!!");
 
     // // Use the configured signer to submit the on-chain transactions
     const signer = await getSigner(chain, chainId, email, chatId);
-    console.log("🚀 ~ EVMSwapMain ~ signer:", signer);
+    // console.log("🚀 ~ EVMSwapMain ~ signer:", signer);
+    console.log("🚀 ~ EVMSwapMain ~ signer: get signer successfull");
     if (!signer) {
       console.log("🚀 ~ EVMSwapMain ~ signer: signer failed!!");
       return res.status(HTTP.SUCCESS).send({
@@ -119,9 +128,6 @@ async function EVMSwapMain(req, res) {
         message: "Somthing has been wrong please try again!!",
       });
     }
-    const walletDetails =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
 
     await TxnEvm.create({
       userId: walletDetails?.id,

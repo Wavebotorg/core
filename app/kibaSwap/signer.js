@@ -6,7 +6,7 @@ async function getSigner(chain, chainId, email, chatId) {
   const walletDetails =
     (chatId && (await getWalletInfo(chatId))) ||
     (email && (await getWalletInfoByEmail(email)));
-  console.log("🚀 ~ getSigner ~ walletDetails:", walletDetails);
+  // console.log("🚀 ~ getSigner ~ walletDetails:", walletDetails);
   const PRIVATE_KEY = walletDetails?.hashedPrivateKey;
 
   // Return a new Wallet instance which handles private keys directly

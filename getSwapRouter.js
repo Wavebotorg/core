@@ -11,7 +11,7 @@ async function getSwapRouteV1(
   chatId
 ) {
   // Get the path to be called
-  console.log("🚀 ~ getSwapRouteV1 ~ desimals:", desimals);
+  // console.log("🚀 ~ getSwapRouteV1 ~ desimals:", desimals);
   console.log("🚀 ~ getSwapRouteV1 ~ amount:", amount);
   const targetChain = chainId?.trim();
   console.log("🚀 ~ getSwapRouteV1 ~ targetChain:", targetChain);
