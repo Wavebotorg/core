@@ -1,6 +1,7 @@
 const { ethers } = require("ethers");
 const HTTP = require("../../constants/responseCode.constant");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
+const transfer = require("../Models/transfer");
 
 async function sendERC20Token(req, res) {
   try {
@@ -16,7 +17,7 @@ async function sendERC20Token(req, res) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "All 1 fileds are required!!",
+        message: "All fileds are required!!",
       });
     }
     if (!(token && toWallet && amount && chain)) {
@@ -128,6 +129,14 @@ async function sendERC20Token(req, res) {
       "🚀 ~ sendERC20Token ~ receipt?.transactionHash:",
       receipt?.transactionHash
     );
+    await transfer.create({
+      userId: walletDetails?.id,
+      token,
+      toWallet,
+      network: chain,
+      amount,
+      tx: receipt?.transactionHash,
+    });
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,

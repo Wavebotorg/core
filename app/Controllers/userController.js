@@ -99,8 +99,8 @@ const signUp = async (req, res) => {
         });
         if (referralUser) {
           obj.referred = referralUser?._id;
+          await obj.save();
         }
-        await obj.save();
       }
       let saveData = await obj.save();
       delete saveData._doc.otp;
@@ -1025,7 +1025,41 @@ async function sendOtp(req, res) {
     });
   }
 }
+
+async function getUserReferals(req, res) {
+  try {
+    const user = req.user?._id;
+    console.log("🚀 ~ getUserReferals ~ user:", user);
+    const dataRef = await userModel
+      .find({ referred: user })
+      .select("name email");
+    console.log("🚀 ~ getUserReferals ~ data:", dataRef);
+    if (!dataRef) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.INTERNAL_SERVER_ERROR,
+        msg: "no referral found!!",
+        data: {},
+      });
+    }
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "referral fetched!!",
+      dataRef,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getUserReferals ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "something has been wrong!!",
+      data: {},
+    });
+  }
+}
 module.exports = {
+  getUserReferals,
   logoutBotUser,
   startBot,
   signUp,

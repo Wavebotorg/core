@@ -9,6 +9,7 @@ const transactions = require("../Controllers/transaction.controller");
 const kyberEVM = require("../Controllers/EVM.controller");
 const qrCode = require("../Controllers/QrCodeController");
 const transferEvm = require("../Controllers/transferToken.controller");
+const solanaTransfer = require("../Controllers/solanaTransfer.controller");
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -23,6 +24,7 @@ route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
+route.get("/getUserReferals", authuser, userController.getUserReferals);
 route.post(
   "/removeCoinWatchlist",
   authuser,
@@ -63,4 +65,8 @@ route.post("/getQrCode", qrCode.getQrCode);
 
 // ------------------------------------------- EVM token transfer api--------------------------------
 route.post("/transferEvmToken", transferEvm.sendERC20Token);
+
+// ------------------------------------------- solana token transfer api--------------------------------
+route.post("/transferSolanaToken", solanaTransfer.solanaTransfer);
+
 module.exports = route;

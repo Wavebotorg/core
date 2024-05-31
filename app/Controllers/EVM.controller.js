@@ -22,6 +22,14 @@ async function EVMSwapMain(req, res) {
       desCode,
       method,
     } = req.body;
+    console.log("🚀 ~ EVMSwapMain ~ method:", method);
+    console.log("🚀 ~ EVMSwapMain ~ desCode:", desCode);
+    console.log("🚀 ~ EVMSwapMain ~ email:", email);
+    console.log("🚀 ~ EVMSwapMain ~ chain:", chain);
+    console.log("🚀 ~ EVMSwapMain ~ amount:", amount);
+    console.log("🚀 ~ EVMSwapMain ~ chainId:", chainId);
+    console.log("🚀 ~ EVMSwapMain ~ tokenOut:", tokenOut);
+    console.log("🚀 ~ EVMSwapMain ~ tokenIn:", tokenIn);
     if (!tokenIn || !tokenOut || !chainId || !amount || !chain || !desCode) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -68,7 +76,12 @@ async function EVMSwapMain(req, res) {
     console.log("🚀 ~ EVMSwapMain ~ routerContract: get successfull!!");
 
     // // Use the configured signer to submit the on-chain transactions
-    const signer = await getSigner(chain, chainId, email, chatId);
+    const signer = await getSigner(
+      chain,
+      chainId?.toLowerCase(),
+      email,
+      chatId
+    );
     // console.log("🚀 ~ EVMSwapMain ~ signer:", signer);
     console.log("🚀 ~ EVMSwapMain ~ signer: get signer successfull");
     if (!signer) {

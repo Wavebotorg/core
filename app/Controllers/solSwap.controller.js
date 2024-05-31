@@ -2,6 +2,7 @@ const {
   Connection,
   Keypair,
   VersionedTransaction,
+  PublicKey,
 } = require("@solana/web3.js");
 // const {} = require("@solana/spl-token");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
@@ -156,88 +157,6 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
   }
 }
 
-// ----------------------------------------- solana swapping controller --------------------------------
-
-// async function solanaSwapping(req, res) {
-//     const { input, output, chatId, amount, email, desBot } = req.body
-//     console.log("🚀 ~ solanaSwapping ~ req.body:", req.body)
-//     if (desBot) {
-//         try {
-
-//             console.log("------------ buy function run --------------------------------")
-//             const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-//             // res.send(inputInfo)
-//             const amountSOL = await ethers.utils.parseUnits(amount?.toFixed(9).toString(), 9);
-//             console.log("------------ amout --------------------------------")
-
-//             console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
-//             const numbersArray = walletDetails.solanaPK.split(',').map(Number);
-//             const PK = Uint8Array.from(numbersArray);
-//             const mainWallet = Keypair.fromSecretKey(PK);
-
-//             const { txid, confirmTransaction } = await swapTokens(
-//                 input,
-//                 output,
-//                 amountSOL,
-//                 mainWallet,
-//                 walletDetails.solanawallet
-//             );
-//             if (confirmTransaction?.value?.err) {
-//                 return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
-//             }
-//             const transactionCreated = await Txn.create({
-//                 userId: walletDetails?.id,
-//                 txid: txid,
-//                 amount: amount,
-//                 from: input,
-//                 to: output,
-//             })
-//             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
-//         } catch (error) {
-//             console.log("🚀 ~ solanaSwapping ~ error:", error)
-//             return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
-//         }
-//     } else {
-//         try {
-//             console.log("------------ swap function run --------------------------------")
-//             const walletDetails = chatId && await getWalletInfo(chatId) || email && await getWalletInfoByEmail(email)
-//             const inputDesimals = await getWalletInfoDes(walletDetails?.solanawallet, input)
-//             console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals)
-//             if (!inputDesimals) {
-//                 return res.status(200).send({ status: false, message: "transaction failed!!" })
-//             }
-//             // res.send(inputInfo)
-//             const amountSOL = await ethers.utils.parseUnits(amount.toString(), inputDesimals);
-//             console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL)
-//             const numbersArray = walletDetails.solanaPK.split(',').map(Number);
-//             const PK = Uint8Array.from(numbersArray);
-//             const mainWallet = Keypair.fromSecretKey(PK);
-
-//             const { txid, confirmTransaction } = await swapTokens(
-//                 input,
-//                 output,
-//                 amountSOL,
-//                 mainWallet,
-//                 walletDetails.solanawallet
-//             );
-//             if (confirmTransaction?.value?.err) {
-//                 return res.status(200).send({ status: false, message: "due to network error transaction has been failed please do it after sometime!!" })
-//             }
-//             const transactionCreated = await Txn.create({
-//                 userId: walletDetails?.id,
-//                 txid: txid,
-//                 amount: amount,
-//                 from: input,
-//                 to: output,
-//             })
-//             return res.status(200).send({ status: true, message: "Transaction Successful!", transactionCreated })
-//         } catch (error) {
-//             console.log("🚀 ~ solanaSwapping ~ error:", error?.message)
-//             return res.status(200).send({ status: false, message: "somthing has been wrong please try again after some time!!" })
-//         }
-//     }
-// }
-
 async function solanaSwapping(req, res) {
   const { input, output, chatId, amount, email, desBot, method } = req.body;
   console.log("🚀 ~ solanaSwapping ~ method:", method);
@@ -251,7 +170,7 @@ async function solanaSwapping(req, res) {
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
       // res.send(inputInfo)
-      const amountSOL = await ethers.utils.parseUnits(  
+      const amountSOL = await ethers.utils.parseUnits(
         amount?.toFixed(9).toString(),
         9
       );
@@ -322,11 +241,15 @@ async function solanaSwapping(req, res) {
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
       console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails);
-      const inputDesimals = await getWalletInfoDes(
-        walletDetails?.solanawallet,
-        input
-      );
-      console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals);
+      // const inputDesimals = await getWalletInfoDes(
+      //   walletDetails?.solanawallet,
+      //   input
+      // );
+      // console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals);
+      const tokenMint = new PublicKey(input);
+      const tokenAccountInfo = await connection.getAccountInfo(tokenMint);
+      const inputDesimals = tokenAccountInfo?.data?.slice(44, 45)[0];
+      console.log("Decimals:", inputDesimals);
       if (!inputDesimals) {
         return res
           .status(200)
@@ -406,7 +329,7 @@ async function solanaBalanceFetch(req, res) {
   const { chatId, email } = req.body;
   try {
     if (chatId) {
-      const walletDetails = await getWalletInfo(chatId);  
+      const walletDetails = await getWalletInfo(chatId);
       if (!walletDetails) {
         return res.status(HTTP.SUCCESS).send({
           status: false,
@@ -561,7 +484,7 @@ async function getSolanaTokenPrice(req, res) {
 
 // ---------------------------------- get EVM token prices --------------------------------
 
-async function getEvmTokenPrice(req, res) {
+async function  getEvmTokenPrice(req, res) {
   try {
     console.log("----------------start---------------------");
     if (!Moralis.Core.isStarted) {
