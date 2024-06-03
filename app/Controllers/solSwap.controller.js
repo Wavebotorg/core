@@ -10,7 +10,6 @@ const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
 const userModel = require("../Models/userModel");
-const Txn = require("../Models/Txn.model");
 const TxnEvm = require("../Models/TXNevmSwap");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------

@@ -56,6 +56,9 @@ router.post("/updatePassword", adminController.updatePassword);
 // get evm transactions
 router.post("/transactions", authadmin, transactions.evmtransaction);
 
+//  get user transactions
+router.post("/userTransactions", authadmin, adminController.usertransaction);
+
 // get solana transactions
 // router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
 

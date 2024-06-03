@@ -1,6 +1,7 @@
 const Txn = require("../Models/Txn.model");
 const TxnEvm = require("../Models/TXNevmSwap");
 const HTTP = require("../../constants/responseCode.constant");
+const transfer = require("../Models/transfer");
 
 async function allTransactionHistory(req, res) {
   const { id } = req.body;
@@ -72,19 +73,103 @@ async function solanatransaction(req, res) {
   }
 }
 async function evmtransaction(req, res) {
+  const { email } = req.body;
+  const { chainId, method } = req.body;
+  console.log("🚀 ~ evmtransaction ~ method:", method);
+  console.log("🚀 ~ evmtransaction ~ chainId:", chainId);
+  let networkName;
+  switch (chainId) {
+    case 1:
+      networkName = "Ethereum";
+      break;
+    case 42161:
+      networkName = "Arbitrum";
+      break;
+    case 137:
+      networkName = "Polygon";
+      break;
+    case 8453:
+      networkName = "Base";
+      break;
+    case 10:
+      networkName = "Optimistic";
+      break;
+    case 43114:
+      networkName = "Avalanche";
+      break;
+    case 56:
+      networkName = "BNB";
+      break;
+    case 324:
+      networkName = "ZKSYNC";
+      break;
+    case 25:
+      networkName = "Cronos";
+      break;
+    case 250:
+      networkName = "Fantom";
+      break;
+    default:
+      break;
+  }
+  if (method == "transfer") {
+    const transactions = await transfer
+      .find({
+        network: chainId,
+      })
+      .select("-userId")
+      .sort({ createdAt: -1 });
+    if (!transactions) {
+      console.log(
+        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
+      );
+    }
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "EVM transactions fetch!!",
+      transactions,
+      networkName,
+    });
+  } else {
+    const transactions = await TxnEvm.find({
+      chainId,
+      method: new RegExp(`^${method}$`, "i"),
+    })
+      .select("-userId")
+      .sort({ createdAt: -1 });
+    if (!transactions) {
+      console.log(
+        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
+      );
+    }
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "EVM transactions fetch!!",
+      transactions,
+    });
+  }
+}
+
+// transaction as per the method
+async function transactions(req, res) {
   const userId = req.body?.id;
-  const { chainId } = req.body;
+  const { chainId, method } = req.body;
+  console.log("🚀 ~ evmtransaction ~ method:", method);
   console.log("🚀 ~ evmtransaction ~ chainId:", chainId);
   const id = userId || req?.user?._id;
   console.log("🚀 ~ evmtransaction ~ id:", id);
-
-  if (chainId && userId) {
+  if (method && chainId) {
     const transactions = await TxnEvm.find({
       userId: id,
       chainId: chainId,
+      method: new RegExp(`^${method}$`, "i"),
     })
       .select("-userId")
       .sort({ createdAt: -1 });
+    console.log("🚀 ~ evmtransaction ~ transactions: meeet", transactions);
     if (!transactions) {
       console.log(
         "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
@@ -93,30 +178,15 @@ async function evmtransaction(req, res) {
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
-      transactions,
-    });
-  } else if (userId) {
-    const transactions = await TxnEvm.find({
-      userId: id,
-    })
-      .select("-userId")
-      .sort({ createdAt: -1 });
-    if (!transactions) {
-      console.log(
-        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
-      );
-    }
-    return res.status(HTTP.SUCCESS).send({
-      status: true,
-      code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
+      msg: "transactions fetch!!",
       transactions,
     });
   } else if (chainId) {
-    const transactions = await TxnEvm.find({
-      chainId: chainId,
-    })
+    const transactions = await transfer
+      .find({
+        userId: id,
+        network: chainId,
+      })
       .select("-userId")
       .sort({ createdAt: -1 });
     if (!transactions) {
@@ -127,22 +197,7 @@ async function evmtransaction(req, res) {
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
-      transactions,
-    });
-  } else {
-    const transactions = await TxnEvm.find()
-      .select("-userId")
-      .sort({ createdAt: -1 });
-    if (!transactions) {
-      console.log(
-        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
-      );
-    }
-    return res.status(HTTP.SUCCESS).send({
-      status: true,
-      code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
+      msg: "transactions fetch!!",
       transactions,
     });
   }
@@ -211,4 +266,5 @@ module.exports = {
   evmTransactionsCount,
   allTransactionHistory,
   totalTransactionCount,
+  transactions,
 };
