@@ -160,7 +160,22 @@ async function EVMSwapMain(req, res) {
       tx: executeSwapTxReceipt?.transactionHash,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error);
+    console.log("🚀 ~ EVMSwapMain ~ error:", error.code);
+    if (error?.method == "estimateGas") {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        message: "Insufficient balance!!",
+      });
+    }
+    if (error?.code == "UNSUPPORTED_OPERATION") {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        message:
+          "Somthing has been wrong make sure you entered correct details!!",
+      });
+    }
     return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.BAD_REQUEST,
