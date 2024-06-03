@@ -24,7 +24,7 @@ route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
-route.get("/getUserReferals", authuser, userController.getUserReferals);
+route.get("/getUserReferals", authuser, userController.getReferrals);
 route.post(
   "/removeCoinWatchlist",
   authuser,
@@ -56,7 +56,7 @@ route.post("/getEvmTokenPrice", solanaswapping.getEvmTokenPrice);
 // ---------------------------------------- transaction--------------------------------------------
 route.post("/solanaTransactions", authuser, transactions.solanatransaction);
 route.post("/transactions", authuser, transactions.evmtransaction);
-route.post("/transactionsBuyMethod", authuser, transactions.transactions);
+route.post("/transactionsByMethod", authuser, transactions.transactions);
 
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);

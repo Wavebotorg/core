@@ -1,7 +1,9 @@
 const web3 = require("@solana/web3.js");
 const spl = require("@solana/spl-token");
 const HTTP = require("../../constants/responseCode.constant");
+
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
+const transfer = require("../Models/transfer");
 const { PublicKey, Keypair, Connection, LAMPORTS_PER_SOL } = web3;
 
 async function solanaTransfer(req, res) {
@@ -121,16 +123,16 @@ async function solanaTransfer(req, res) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "Transaction failed, please try again later!!",
+        message: "Transaction failed meet, please try again later!!",
       });
     }
     await transfer.create({
       userId: walletDetails?.id,
       token,
       toWallet,
-      network: "Solana",
+      network: 19999,
       amount,
-      tx: receipt?.transactionHash,
+      tx: signature,
     });
     return res.status(HTTP.SUCCESS).send({
       status: true,

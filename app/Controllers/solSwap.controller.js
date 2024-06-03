@@ -256,7 +256,7 @@ async function solanaSwapping(req, res) {
       }
       // res.send(inputInfo)
       const amountSOL = await ethers.utils.parseUnits(
-        amount.toString(),
+        amount?.toString(),
         inputDesimals
       );
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);

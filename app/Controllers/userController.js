@@ -37,7 +37,7 @@ const signUp = async (req, res) => {
     req.body
   );
   try {
-    const { name, email, password, confirmPassword, chatId, referralCode } =
+    const { name, email, password, confirmPassword, chatId, refferal } =
       req.body;
     if (!name || !email || !password || !confirmPassword)
       return res.status(HTTP.SUCCESS).send({
@@ -93,9 +93,9 @@ const signUp = async (req, res) => {
         templetpath: "./emailtemplets/templaet.html",
       };
       sendMail(data);
-      if (referralCode) {
+      if (refferal) {
         const referralUser = await userModel.findOne({
-          referralId: referralCode,
+          referralId: refferal,
         });
         if (referralUser) {
           obj.referred = referralUser?._id;
@@ -1058,7 +1058,70 @@ async function getUserReferals(req, res) {
     });
   }
 }
+
+// function levels of refferals
+
+async function refferalsLevel(data) {
+  let users = [];
+  for (let index = 0; index < data.length; index++) {
+    let user = await userModel
+      .find({ referred: data[index]?._id })
+      .populate({
+        path: "referred",
+        select: "name email",
+      })
+      .select("name email referred createdAt");
+    users = [...users, ...user];
+  }
+  return users;
+}
+
+async function getReferrals(req, res) {
+  try {
+    const { _id } = req.user;
+    console.log("🚀 ~ getReferrals ~ _id:", _id);
+    // ------------------------- level 1------------------------------------
+    const user = await userModel
+      .find({ referred: _id })
+      .populate({
+        path: "referred",
+        select: "name email",
+      })
+      .select("name email referred createdAt");
+
+    // ------------------------- level 2------------------------------------
+    const user2 = await refferalsLevel(user);
+    // ------------------------- level 3------------------------------------
+    const user3 = await refferalsLevel(user2);
+    // ------------------------- level 4------------------------------------
+    const user4 = await refferalsLevel(user3);
+    // ------------------------- level 5------------------------------------
+    const user5 = await refferalsLevel(user4);
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "referral fetched!!",
+      data: {
+        level1: user,
+        level2: user2,
+        level3: user3,
+        level4: user4,
+        level5: user5,
+      },
+    });
+  } catch (error) {
+    console.log("🚀 ~ getReferrals ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "somthing has been wrong!!",
+    });
+  }
+}
+
 module.exports = {
+  getReferrals,
   getUserReferals,
   logoutBotUser,
   startBot,
