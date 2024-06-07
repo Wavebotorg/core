@@ -38,7 +38,7 @@ const generateOTP = () => {
     userModel(admin).save();
   } catch (error) {
     console.log(error);
-    return res.status(HTTP.SUCCESS).json({
+    return res?.status(HTTP.SUCCESS).json({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
       msg: "Internal Server Error",

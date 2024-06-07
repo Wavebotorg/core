@@ -23,14 +23,13 @@ async function EVMSwapMain(req, res) {
       method,
     } = req.body;
     console.log("🚀 ~ EVMSwapMain ~ method:", method);
-    console.log("🚀 ~ EVMSwapMain ~ desCode:", desCode);
     console.log("🚀 ~ EVMSwapMain ~ email:", email);
     console.log("🚀 ~ EVMSwapMain ~ chain:", chain);
     console.log("🚀 ~ EVMSwapMain ~ amount:", amount);
     console.log("🚀 ~ EVMSwapMain ~ chainId:", chainId);
     console.log("🚀 ~ EVMSwapMain ~ tokenOut:", tokenOut);
     console.log("🚀 ~ EVMSwapMain ~ tokenIn:", tokenIn);
-    if (!tokenIn || !tokenOut || !chainId || !amount || !chain || !desCode) {
+    if (!tokenIn || !tokenOut || !chainId || !amount || !chain) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,

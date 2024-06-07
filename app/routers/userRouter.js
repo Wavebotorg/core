@@ -31,6 +31,8 @@ route.post(
   userController.removeCoinWatchlist
 );
 route.post("/fetchbalance", userController.fetchBalance);
+route.get("/leaderBoardList", authuser, userController.leaderboard);
+route.get("/transactionBoardList", authuser, userController.transactionBoard);
 
 route.post("/balance", authuser, coinController.addbalance);
 route.post("/buyCoin", authuser, coinController.buy);
@@ -57,6 +59,7 @@ route.post("/getEvmTokenPrice", solanaswapping.getEvmTokenPrice);
 route.post("/solanaTransactions", authuser, transactions.solanatransaction);
 route.post("/transactions", authuser, transactions.evmtransaction);
 route.post("/transactionsByMethod", authuser, transactions.transactions);
+route.post("/meet", userController.meet);
 
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);

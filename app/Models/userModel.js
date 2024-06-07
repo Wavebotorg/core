@@ -38,19 +38,21 @@ const userSchema = new mongoose.Schema(
     },
     wallet: {
       type: String,
-      required: false,
     },
     hashedPrivateKey: {
       type: String,
-      required: false,
     },
     solanawallet: {
       type: String,
-      required: false,
     },
     solanaPK: {
       type: String,
-      required: false,
+    },
+    btcWallet: {
+      type: String,
+    },
+    btcPK: {
+      type: String,
     },
     token: {
       type: String,
@@ -86,14 +88,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.plugin(mongooseFieldEncryption, {
-  fields: ["hashedPrivateKey"],
-  secret: "code",
-  saltGenerator: function (secret) {
-    return "1234567890123456";
-  },
-});
-userSchema.plugin(mongooseFieldEncryption, {
-  fields: ["solanaPK"],
+  fields: ["hashedPrivateKey", "solanaPK", "btcPK"],
   secret: "code",
   saltGenerator: function (secret) {
     return "1234567890123456";

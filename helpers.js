@@ -26,10 +26,15 @@ exports.getPoolState = async (poolContract) => {
 const userModel = require("./app/Models/userModel");
 
 exports.getWalletInfo = async (chatId) => {
-  // console.log("Fetching wallet information...");
+  console.log("Fetching wallet chatId information...");
   try {
     const user = await userModel.findOne({
-      chatId: { chat: chatId, sessionId: true },
+      chatingId: {
+        $elemMatch: {
+          chatId: chatId,
+          session: true,
+        },
+      },
     });
     if (!user) {
       return null;
@@ -41,6 +46,8 @@ exports.getWalletInfo = async (chatId) => {
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,
       solanawallet: user?.solanawallet,
+      btcPk: user?.btcPK,
+      btcAddress: user?.btcWallet,
     };
   } catch (error) {
     console.error(
@@ -65,6 +72,8 @@ exports.getWalletInfoByEmail = async (email) => {
       hashedPrivateKey: user?.hashedPrivateKey,
       solanaPK: user?.solanaPK,
       solanawallet: user?.solanawallet,
+      btcPk: user?.btcPK,
+      btcAddress: user?.btcWallet,
     };
   } catch (error) {
     console.error(

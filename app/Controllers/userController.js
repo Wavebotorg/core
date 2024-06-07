@@ -18,6 +18,7 @@ const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { swapToken } = require("../Controllers/uniswapTrader");
 const { decrypt } = require("mongoose-field-encryption");
 const TxnEvm = require("../Models/TXNevmSwap");
+const { createBTCWallet } = require("../../utils/createBitcoinWallet");
 
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
@@ -81,6 +82,10 @@ const signUp = async (req, res) => {
         chatId: {
           chat: chatId,
           sessionId: false,
+        },
+        chatingId: {
+          chatId: chatId,
+          session: true,
         },
         //createdAt: new Date().toLocaleDateString("en-GB"),
       });
@@ -149,12 +154,6 @@ const login = async (req, res) => {
         msg: "Email is invalid!",
         data: {},
       });
-    if (chatId) {
-      await userModel.updateMany(
-        { "chatId.chat": chatId },
-        { $set: { "chatId.sessionId": false } }
-      );
-    }
     const findUser = await userModel.findOne({ email: email, isActive: true });
     if (!findUser)
       return res.status(HTTP.SUCCESS).send({
@@ -173,25 +172,60 @@ const login = async (req, res) => {
         const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY, {
           expiresIn: "1d",
         }); // Token expires in 30 days
-        const updatedChatId = chatId || null;
         if (chatId) {
           findUser.chatId = {
-            chat: updatedChatId,
+            chat: chatId,
             sessionId: true,
           };
         }
         await findUser.save();
         if (chatId) {
-          const newUser = findUser.chatingId.find(
-            (ele) => ele.chatId == chatId
+          await userModel.updateMany(
+            {
+              chatingId: {
+                $elemMatch: {
+                  chatId: chatId,
+                  session: true,
+                },
+              },
+            },
+            {
+              $set: {
+                "chatingId.$.session": false,
+              },
+            }
           );
-          if (!newUser) {
-            findUser.chatingId.push({ chatId: chatId, session: true });
-            findUser.chatingId.forEach((user) => {
-              if (user.chatId !== chatId) {
-                user.session = false;
+
+          // Check if chatId already exists in chatingId array
+          let chatExists = false;
+          for (let i = 0; i < findUser?.chatingId?.length; i++) {
+            if (findUser.chatingId[i].chatId === chatId) {
+              chatExists = true;
+              if (!findUser.chatingId[i].session) {
+                findUser.chatingId[i].session = true;
+                await userModel.updateOne(
+                  { _id: findUser._id },
+                  { $set: { chatingId: findUser.chatingId } }
+                );
+                console.log(
+                  "🚀 ~ login ~ Session set to true for existing chatId"
+                );
               }
-            });
+              break;
+            }
+          }
+          if (!chatExists) {
+            if (findUser?.chatingId?.length >= 4) {
+              const index = findUser.chatingId.findIndex(
+                (obj) => obj.session === false
+              );
+              if (index !== -1) {
+                findUser.chatingId.splice(index, 1);
+              } else {
+                findUser.chatingId.shift();
+              }
+            }
+            findUser.chatingId.push({ chatId: chatId, session: true });
             await findUser.save();
           }
         }
@@ -277,11 +311,12 @@ const verify = async (req, res) => {
           msg: "User not found",
           data: {},
         });
-      const wallet = ethers.Wallet.createRandom();
+      const wallet = await ethers.Wallet.createRandom();
       const walletAddress = wallet.address;
       const walletPrivateKey = wallet.privateKey;
-      const { solanaAddress, solanaPrivateKey, solanaPublicKey } =
-        generateWallet();
+      const { solanaAddress, solanaPrivateKey } = await generateWallet();
+      const { BTCprivateKeyWIF, BTCprivateKeyHex, address } =
+        await createBTCWallet();
       const updatedUser = await userModel.findOneAndUpdate(
         { email: req.body.email },
         {
@@ -290,6 +325,8 @@ const verify = async (req, res) => {
             hashedPrivateKey: walletPrivateKey,
             solanaPK: solanaPrivateKey,
             solanawallet: solanaAddress,
+            btcWallet: address,
+            btcPK: BTCprivateKeyHex,
           },
         },
         {
@@ -329,11 +366,20 @@ const verify = async (req, res) => {
         await findEmail.save();
       }
       await findEmail.save();
+      // generate token
+      const token = jwt.sign({ _id: findEmail._id }, process.env.SECRET_KEY, {
+        expiresIn: "1d",
+      });
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
         msg: "Verification Successful. Welcome email sent.",
         data: req.body.types,
+        userData: {
+          name: findEmail?.name,
+          email: findEmail?.email,
+        },
+        token: token,
       });
     } else {
       return res.status(HTTP.SUCCESS).send({
@@ -935,10 +981,11 @@ const mainswap = async (req, res) => {
 // ----------------------------------- start bot API ----------------------------------
 async function startBot(req, res) {
   const { chatId } = req.body;
+  console.log("🚀 ~ startBot ~ chatId:", chatId);
   const isLogin = await userModel.findOne({
-    chatId: {
-      chat: req.body.chatId,
-      sessionId: true,
+    chatingId: {
+      chatId,
+      session: true,
     },
   });
   if (!isLogin) {
@@ -958,19 +1005,38 @@ async function startBot(req, res) {
 }
 // -------------------------------------------------- logout ------------------------------------
 async function logoutBotUser(req, res) {
+  console.log(
+    "------------------------- logout called -------------------------"
+  );
   const { chatId } = req.body;
-  // const user = await userModel.find({ chatId: chatId });
-  const userLogout = await userModel.findOne({ "chatId.chat": chatId });
-  userLogout.chatId = {
-    chat: chatId,
-    sessionId: false,
-  };
-  const userLogged = await userLogout.save();
+  console.log("🚀 ~ logoutBotUser ~ chatId:", chatId);
+  const userLogout = await userModel.findOneAndUpdate(
+    {
+      chatingId: {
+        $elemMatch: {
+          chatId: chatId,
+          session: true,
+        },
+      },
+    },
+    {
+      $set: {
+        "chatingId.$.session": false,
+      },
+    },
+    { new: true }
+  );
+  console.log("🚀 ~ logoutBotUser ~ userLogout:", userLogout);
+  // userLogout.chatId = {
+  //   chat: chatId,
+  //   sessionId: false,
+  // };
+  // const userLogged = await userLogout.save();
   if (!userLogout) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
       code: HTTP.BAD_REQUEST,
-      msg: "network error!",
+      msg: "network error!!",
       data: {},
     });
   }
@@ -1080,38 +1146,133 @@ async function getReferrals(req, res) {
   try {
     const { _id } = req.user;
     console.log("🚀 ~ getReferrals ~ _id:", _id);
-    // ------------------------- level 1------------------------------------
-    const user = await userModel
-      .find({ referred: _id })
-      .populate({
-        path: "referred",
-        select: "name email",
-      })
-      .select("name email referred createdAt");
 
-    // ------------------------- level 2------------------------------------
-    const user2 = await refferalsLevel(user);
-    // ------------------------- level 3------------------------------------
-    const user3 = await refferalsLevel(user2);
-    // ------------------------- level 4------------------------------------
-    const user4 = await refferalsLevel(user3);
-    // ------------------------- level 5------------------------------------
-    const user5 = await refferalsLevel(user4);
+    const referrals = await userModel.aggregate([
+      {
+        $match: { _id: _id },
+      },
+      {
+        $graphLookup: {
+          from: "users",
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "referred",
+          as: "referrals",
+          maxDepth: 5,
+          depthField: "level",
+        },
+      },
+      {
+        $unwind: "$referrals",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "referrals.referred",
+          foreignField: "_id",
+          as: "referredUser",
+        },
+      },
+      {
+        $unwind: "$referredUser",
+      },
+      {
+        $group: {
+          _id: "$referrals.level",
+          users: {
+            $push: {
+              name: "$referrals.name",
+              email: "$referrals.email",
+              referred: "$referredUser.name",
+              createdAt: "$referrals.createdAt",
+            },
+          },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by level
+      },
+    ]);
+
+    let levels = {};
+    referrals.forEach((level) => {
+      levels[`level${level._id + 1}`] = level.users;
+    });
 
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "referral fetched!!",
-      data: {
-        level1: user,
-        level2: user2,
-        level3: user3,
-        level4: user4,
-        level5: user5,
-      },
+      msg: "Referral fetched!!",
+      data: referrals,
     });
   } catch (error) {
     console.log("🚀 ~ getReferrals ~ error:", error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!!",
+    });
+  }
+}
+
+async function meet(req, res) {
+  const { chatId, email } = req.body;
+  if (chatId) {
+    const msg = await getWalletInfo(chatId);
+    res.send(msg);
+  } else if (email) {
+    const msg = await getWalletInfoByEmail(email);
+    res.send(msg);
+  }
+}
+
+async function leaderboard(req, res) {
+  try {
+    const leaderboard = await userModel.aggregate([
+      {
+        $group: {
+          _id: "$referred",
+          referrals: { $sum: 1 },
+        },
+      },
+      {
+        $match: {
+          _id: { $ne: null },
+        },
+      },
+      {
+        $sort: {
+          referrals: -1,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: "$userDetails",
+      },
+      {
+        $project: {
+          _id: 1,
+          referrals: 1,
+          name: "$userDetails.name",
+          email: "$userDetails.email",
+        },
+      },
+    ]);
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "referral fetched!!",
+      leaderboard,
+    });
+  } catch (error) {
+    console.log("🚀 ~ leaderboard ~ error:", error);
     return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
@@ -1120,7 +1281,71 @@ async function getReferrals(req, res) {
   }
 }
 
+async function transactionBoard(req, res) {
+  const userTransactionCount = await TxnEvm.aggregate([
+    {
+      $group: {
+        _id: "$userId",
+        totalTransaction: { $sum: 1 },
+        totalTransferToken: { $sum: "$amount" },
+      },
+    },
+    {
+      $unionWith: {
+        coll: "transfers",
+        pipeline: [
+          {
+            $group: {
+              _id: "$userId",
+              totalTransaction: { $sum: 1 },
+              totalTransferToken: { $sum: "$amount" },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        totalTransaction: { $sum: "$totalTransaction" },
+        totalTransferToken: { $sum: "$totalTransferToken" },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+    {
+      $unwind: "$userDetails",
+    },
+    {
+      $project: {
+        _id: 1,
+        name: "$userDetails.name",
+        email: "$userDetails.email",
+        totalTransaction: 1,
+        totalTransferToken: 1,
+      },
+    },
+    {
+      $sort: { totalTransferToken: -1 },
+    },
+  ]);
+  return res.status(HTTP.SUCCESS).send({
+    status: true,
+    code: HTTP.SUCCESS,
+    msg: "transaction leaderboard!!",
+    userTransactionCount,
+  });
+}
 module.exports = {
+  transactionBoard,
+  leaderboard,
+  meet,
   getReferrals,
   getUserReferals,
   logoutBotUser,
@@ -1142,17 +1367,3 @@ module.exports = {
   changePassword,
   //getWalletInfo,
 };
-// async function getSolanaWalletInfo(tokenAddress) {
-//     try {
-//         await Moralis.start({
-//             apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImQ0NjdmZGY2LTliMjAtNGI1OS04YjhiLTY5M2VjODI1Yzc0MSIsIm9yZ0lkIjoiMzYwNzQzIiwidXNlcklkIjoiMzcwNzQ2IiwidHlwZUlkIjoiNzE0YjA0ODItNzFlOC00MjZhLWFjMjAtNDVmOTNkMzAzYjEzIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE2OTcwOTU5OTMsImV4cCI6NDg1Mjg1NTk5M30.-PhgtuNnoH7o7jC6McGvSiw-tlX_VuOso5KzUrs2GNY",
-//         });
-//         const response1 =
-//             await Moralis.SolApi.account.getPortfolio({
-//                 network: "mainnet",
-//                 address: tokenAddress
-//             })
-//         return response1?.raw;
-//     } catch (error) {
-//     }
-// }
