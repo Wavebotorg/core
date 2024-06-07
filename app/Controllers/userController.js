@@ -1203,7 +1203,7 @@ async function getReferrals(req, res) {
       status: true,
       code: HTTP.SUCCESS,
       msg: "Referral fetched!!",
-      data: referrals,
+      data: levels,
     });
   } catch (error) {
     console.log("🚀 ~ getReferrals ~ error:", error);
