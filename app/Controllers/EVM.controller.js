@@ -1,5 +1,5 @@
 const { getTokenApproval } = require("../kibaSwap/approval");
-const { tokenIn } = require("../kibaSwap/constant");
+const { tokenIn, networkUrl } = require("../kibaSwap/constant");
 const { getSigner } = require("../kibaSwap/signer");
 const { postSwapRouteV1 } = require("../../encodeSwapRoute");
 const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
@@ -11,17 +11,8 @@ const { ethers } = require("ethers");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
-    const {
-      tokenIn,
-      tokenOut,
-      chainId,
-      amount,
-      chain,
-      email,
-      chatId,
-      desCode,
-      method,
-    } = req.body;
+    const { tokenIn, tokenOut, chainId, amount, chain, email, chatId, method } =
+      req.body;
     console.log("🚀 ~ EVMSwapMain ~ method:", method);
     console.log("🚀 ~ EVMSwapMain ~ email:", email);
     console.log("🚀 ~ EVMSwapMain ~ chain:", chain);
@@ -157,6 +148,7 @@ async function EVMSwapMain(req, res) {
       code: HTTP.SUCCESS,
       message: "transaction successfull!!",
       tx: executeSwapTxReceipt?.transactionHash,
+      txUrl: `${networkUrl[chainId]?.url}${receipt?.transactionHash}`,
     });
   } catch (error) {
     console.log("🚀 ~ EVMSwapMain ~ error:", error.code);

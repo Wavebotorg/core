@@ -83,10 +83,7 @@ const signUp = async (req, res) => {
           chat: chatId,
           sessionId: false,
         },
-        chatingId: {
-          chatId: chatId,
-          session: true,
-        },
+
         //createdAt: new Date().toLocaleDateString("en-GB"),
       });
       //const data = { name: name, email: email, otp: random_Number, templetpath: "./emailtemplets/otp_template.html" };
@@ -172,12 +169,12 @@ const login = async (req, res) => {
         const token = jwt.sign({ _id: findUser._id }, process.env.SECRET_KEY, {
           expiresIn: "1d",
         }); // Token expires in 30 days
-        if (chatId) {
-          findUser.chatId = {
-            chat: chatId,
-            sessionId: true,
-          };
-        }
+        // if (chatId) {
+        //   findUser.chatId = {
+        //     chat: chatId,
+        //     sessionId: true,
+        //   };
+        // }
         await findUser.save();
         if (chatId) {
           await userModel.updateMany(
@@ -327,6 +324,10 @@ const verify = async (req, res) => {
             solanawallet: solanaAddress,
             btcWallet: address,
             btcPK: BTCprivateKeyHex,
+            chatingId: {
+              chatId: chatId ? chatId : null,
+              session: chatId ? true : null,
+            },
           },
         },
         {
@@ -367,9 +368,7 @@ const verify = async (req, res) => {
       }
       await findEmail.save();
       // generate token
-      const token = jwt.sign({ _id: findEmail._id }, process.env.SECRET_KEY, {
-        expiresIn: "1d",
-      });
+      const token = jwt.sign({ _id: findEmail._id }, process.env.SECRET_KEY);
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
@@ -1026,7 +1025,7 @@ async function logoutBotUser(req, res) {
     },
     { new: true }
   );
-  console.log("🚀 ~ logoutBotUser ~ userLogout:", userLogout);
+  console.log("🚀 ~ logoutBotUser ~ userLogout:", userLogout?.name);
   // userLogout.chatId = {
   //   chat: chatId,
   //   sessionId: false,

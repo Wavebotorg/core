@@ -21,6 +21,10 @@ const transferSchema = new mongoose.Schema(
     tx: {
       type: String,
     },
+    method: {
+      type: String,
+      default:"Transfer"
+    }
   },
   { timestamps: true }
 );

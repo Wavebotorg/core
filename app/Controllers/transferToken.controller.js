@@ -2,6 +2,7 @@ const { ethers } = require("ethers");
 const HTTP = require("../../constants/responseCode.constant");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
+const { chainUrl } = require("../kibaSwap/constant");
 
 async function sendERC20Token(req, res) {
   try {
@@ -142,6 +143,7 @@ async function sendERC20Token(req, res) {
       code: HTTP.SUCCESS,
       message: "transaction successfull!!",
       tx: receipt?.transactionHash,
+      txUrl: `${chainUrl[chain]?.url}${receipt?.transactionHash}`
     });
   } catch (error) {
     console.log("🚀 ~ sendERC20Token ~ error:", error?.message);

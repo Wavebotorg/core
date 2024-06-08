@@ -1,5 +1,62 @@
 const AggregatorDomain = `https://aggregator-api.kyberswap.com/`;
-
+const networkUrl = {
+  ethereum: {
+    url: "https://etherscan.io/tx/",
+  },
+  bsc: {
+    url: "https://bscscan.com/tx/",
+  },
+  arbitrum: {
+    url: "https://arbiscan.io/tx/",
+  },
+  polygon: {
+    url: "https://polygonscan.com/tx/",
+  },
+  optimism: {
+    url: "https://optimistic.etherscan.io/tx/",
+  },
+  avalanche: {
+    url: "https://avascan.info/blockchain/c/tx/",
+  },
+  base: {
+    url: "https://basescan.org/tx/",
+  },
+  cronos: {
+    url: "https://cronoscan.com/tx/",
+  },
+  fantom: {
+    url: "https://ftmscan.com/tx/",
+  },
+};
+const chainUrl = {
+  1: {
+    url: "https://etherscan.io/tx/",
+  },
+  56: {
+    url: "https://bscscan.com/tx/",
+  },
+  42161: {
+    url: "https://arbiscan.io/tx/",
+  },
+  137: {
+    url: "https://polygonscan.com/tx/",
+  },
+  10: {
+    url: "https://optimistic.etherscan.io/tx/",
+  },
+  43114: {
+    url: "https://avascan.info/blockchain/c/tx/",
+  },
+  8453: {
+    url: "https://basescan.org/tx/",
+  },
+  25: {
+    url: "https://cronoscan.com/tx/",
+  },
+  250: {
+    url: "https://ftmscan.com/tx/",
+  },
+};
 const ChainName = {
   MAINNET: `ethereum`,
   BSC: `bsc`,
@@ -70,4 +127,4 @@ const tokenOut = {
   name: "KyberNetwork Crystal v2 (PoS)",
 };
 
-module.exports = { ChainName, ChainId, tokenIn, tokenOut };
+module.exports = { ChainName, ChainId, tokenIn, tokenOut, networkUrl,chainUrl };
