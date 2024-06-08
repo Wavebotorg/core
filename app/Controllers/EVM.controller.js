@@ -148,7 +148,7 @@ async function EVMSwapMain(req, res) {
       code: HTTP.SUCCESS,
       message: "transaction successfull!!",
       tx: executeSwapTxReceipt?.transactionHash,
-      txUrl: `${networkUrl[chainId]?.url}${receipt?.transactionHash}`,
+      txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });
   } catch (error) {
     console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
