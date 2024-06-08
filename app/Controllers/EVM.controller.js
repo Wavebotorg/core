@@ -151,7 +151,7 @@ async function EVMSwapMain(req, res) {
       txUrl: `${networkUrl[chainId]?.url}${receipt?.transactionHash}`,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error.code);
+    console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
     if (error?.method == "estimateGas") {
       return res.status(HTTP.SUCCESS).send({
         status: false,
