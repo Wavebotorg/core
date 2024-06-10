@@ -1141,6 +1141,78 @@ async function refferalsLevel(data) {
   return users;
 }
 
+// async function getReferrals(req, res) {
+//   try {
+//     const { _id } = req.user;
+//     console.log("🚀 ~ getReferrals ~ _id:", _id);
+
+//     const referrals = await userModel.aggregate([
+//       {
+//         $match: { _id: _id },
+//       },
+//       {
+//         $graphLookup: {
+//           from: "users",
+//           startWith: "$_id",
+//           connectFromField: "_id",
+//           connectToField: "referred",
+//           as: "referrals",
+//           maxDepth: 5,
+//           depthField: "level",
+//         },
+//       },
+//       {
+//         $unwind: "$referrals",
+//       },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "referrals.referred",
+//           foreignField: "_id",
+//           as: "referredUser",
+//         },
+//       },
+//       {
+//         $unwind: "$referredUser",
+//       },
+//       {
+//         $group: {
+//           _id: "$referrals.level",
+//           users: {
+//             $push: {
+//               name: "$referrals.name",
+//               email: "$referrals.email",
+//               referred: "$referredUser.name",
+//               createdAt: "$referrals.createdAt",
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $sort: { _id: 1 }, // Sort by level
+//       },
+//     ]);
+
+//     let levels = {};
+//     referrals.forEach((level) => {
+//       levels[`level${level._id + 1}`] = level.users;
+//     });
+
+//     return res.status(HTTP.SUCCESS).send({
+//       status: true,
+//       code: HTTP.SUCCESS,
+//       msg: "Referral fetched!!",
+//       data: levels,
+//     });
+//   } catch (error) {
+//     console.log("🚀 ~ getReferrals ~ error:", error);
+//     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+//       status: false,
+//       code: HTTP.INTERNAL_SERVER_ERROR,
+//       msg: "Something went wrong!!",
+//     });
+//   }
+// }
 async function getReferrals(req, res) {
   try {
     const { _id } = req.user;
@@ -1167,6 +1239,19 @@ async function getReferrals(req, res) {
       {
         $lookup: {
           from: "users",
+          localField: "referrals._id",
+          foreignField: "referred",
+          as: "userReferrals",
+        },
+      },
+      {
+        $addFields: {
+          "referrals.referralCount": { $size: "$userReferrals" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
           localField: "referrals.referred",
           foreignField: "_id",
           as: "referredUser",
@@ -1184,6 +1269,7 @@ async function getReferrals(req, res) {
               email: "$referrals.email",
               referred: "$referredUser.name",
               createdAt: "$referrals.createdAt",
+              referralCount: "$referrals.referralCount",
             },
           },
         },
@@ -1213,6 +1299,7 @@ async function getReferrals(req, res) {
     });
   }
 }
+
 
 async function meet(req, res) {
   const { chatId, email } = req.body;
