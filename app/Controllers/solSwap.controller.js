@@ -37,8 +37,14 @@ async function getSolanaWalletInformation(walletaddress) {
       network: "mainnet",
       address: walletaddress,
     });
+    console.log(
+      "🚀 ~ getSolanaWalletInformation ~ response1?.raw:",
+      response1?.raw
+    );
     return response1?.raw;
-  } catch (error) {}
+  } catch (error) {
+    console.log("🚀 ~ getSolanaWalletInformation ~ error:", error?.message);
+  }
 }
 // ----------------------------------------- fetch balance and desimals----------------------------------------------
 
@@ -355,6 +361,7 @@ async function solanaBalanceFetch(req, res) {
         code: HTTP.SUCCESS,
         message: "balance fetch successfully !",
         data: walletTokensDetails?.tokens,
+        native: walletTokensDetails?.nativeBalance?.solana,
         walletAddress: walletDetails.solanawallet,
       });
     }
@@ -483,7 +490,7 @@ async function getSolanaTokenPrice(req, res) {
 
 // ---------------------------------- get EVM token prices --------------------------------
 
-async function  getEvmTokenPrice(req, res) {
+async function getEvmTokenPrice(req, res) {
   try {
     console.log("----------------start---------------------");
     if (!Moralis.Core.isStarted) {
