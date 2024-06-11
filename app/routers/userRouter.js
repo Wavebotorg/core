@@ -49,7 +49,7 @@ route.post(
   solanaswapping.getSolanaWalletInfo
 );
 
-route.post("/getUserBotData", solanaswapping.getUserZBotData);
+route.post("/getUserBotData", solanaswapping.getUserBotData);
 route.post("/mainswap", userController.mainswap);
 route.post("/startBot", userController.startBot);
 route.post("/logoutBotUser", userController.logoutBotUser);
@@ -66,6 +66,7 @@ route.post("/EVMswap", kyberEVM.EVMSwapMain);
 
 // --------------------------------- qr code -------------------------------------------------------
 route.post("/getQrCode", qrCode.getQrCode);
+route.post("/getInvideQrCode", qrCode.getInvideQrCode)
 
 // ------------------------------------------- EVM token transfer api--------------------------------
 route.post("/transferEvmToken", transferEvm.sendERC20Token);

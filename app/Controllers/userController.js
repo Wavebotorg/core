@@ -981,18 +981,20 @@ const mainswap = async (req, res) => {
 async function startBot(req, res) {
   const { chatId } = req.body;
   console.log("🚀 ~ startBot ~ chatId:", chatId);
-  const isLogin = await userModel.findOne({
-    chatingId: {
-      chatId,
-      session: true,
-    },
-  });
+  const isLogin = await userModel
+    .findOne({
+      chatingId: {
+        chatId,
+        session: true,
+      },
+    })
+    .select("referralId name email");
   if (!isLogin) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
       code: HTTP.BAD_REQUEST,
       msg: "please login!",
-      data: {},
+      isLogin,
     });
   }
   return res.status(HTTP.SUCCESS).send({
@@ -1299,7 +1301,6 @@ async function getReferrals(req, res) {
     });
   }
 }
-
 
 async function meet(req, res) {
   const { chatId, email } = req.body;

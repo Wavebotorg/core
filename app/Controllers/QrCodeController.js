@@ -65,4 +65,44 @@ async function getQrCode(req, res) {
     console.log("🚀 ~ getQrCode ~ error:", error);
   }
 }
-module.exports = { getQrCode };
+
+async function getInvideQrCode(req, res) {
+  try {
+    const { referralId } = req.body;
+
+    // Ensure the folder exists
+    if (!fs.existsSync(qrCodeFolder)) {
+      fs.mkdirSync(qrCodeFolder);
+    }
+
+    // Construct the full file path
+    const qrCodeFilePath = path.join(qrCodeFolder, `${referralId}.png`);
+
+    // Generate QR Code and save it as an image file
+    QRCode.toFile(
+      qrCodeFilePath,
+      `https://marketing-dashboard-d22655001f93.herokuapp.com/signupRef/${referralId}`,
+      {
+        color: {
+          dark: "#000000", // Black dots
+          light: "#FFFFFF", // White background
+        },
+      },
+      function (err) {
+        if (err) throw err;
+        console.log(`QR code generated and saved to ${qrCodeFilePath}`);
+      }
+    );
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      message: "referralQrCode generated!!",
+      path: `https://wavebot-191945f71768.herokuapp.com/qrcodes/${referralId}.png`,
+      url: `https://marketing-dashboard-d22655001f93.herokuapp.com/signupRef/${referralId}`,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getQrCode ~ error:", error);
+  }
+}
+module.exports = { getQrCode, getInvideQrCode };

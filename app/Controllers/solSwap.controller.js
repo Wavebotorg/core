@@ -405,7 +405,7 @@ async function solanaBalanceFetch(req, res) {
   }
 }
 
-async function getUserZBotData(req, res) {
+async function getUserBotData(req, res) {
   const { chatId } = req.body;
   if (!chatId) {
     return res.status(HTTP.SUCCESS).send({
@@ -580,7 +580,7 @@ async function getSolanaWalletInfo(req, res) {
 module.exports = {
   solanaSwapping,
   solanaBalanceFetch,
-  getUserZBotData,
+  getUserBotData,
   getSolanaTokenPrice,
   getEvmTokenPrice,
   getSolanaWalletInfo,

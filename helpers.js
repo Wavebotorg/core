@@ -48,6 +48,7 @@ exports.getWalletInfo = async (chatId) => {
       solanawallet: user?.solanawallet,
       btcPk: user?.btcPK,
       btcAddress: user?.btcWallet,
+      referralId: user?.referralId,
     };
   } catch (error) {
     console.error(
