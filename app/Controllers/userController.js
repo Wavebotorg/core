@@ -72,6 +72,21 @@ const signUp = async (req, res) => {
         msg: "This username Is Already Existing",
       });
     }
+    let refId = null;
+    if (refferal) {
+      const referralUser = await userModel.findOne({
+        referralId: refferal,
+      });
+      if (!referralUser) {
+        return res.status(200).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          msg: "refferal code is not valid!!",
+        });
+      }
+      refId = referralUser?._id;
+      console.log("🚀 ~ signUp ~ refId:", refId);
+    }
     if (req.body.password == req.body.confirmPassword) {
       const bpass = await bcrypt.hash(req.body.password, 10);
       const obj = new userModel({
@@ -83,6 +98,7 @@ const signUp = async (req, res) => {
           chat: chatId,
           sessionId: false,
         },
+        referred: refferal ? refId : null,
 
         //createdAt: new Date().toLocaleDateString("en-GB"),
       });
@@ -95,15 +111,6 @@ const signUp = async (req, res) => {
         templetpath: "./emailtemplets/templaet.html",
       };
       sendMail(data);
-      if (refferal) {
-        const referralUser = await userModel.findOne({
-          referralId: refferal,
-        });
-        if (referralUser) {
-          obj.referred = referralUser?._id;
-          await obj.save();
-        }
-      }
       let saveData = await obj.save();
       delete saveData._doc.otp;
       const token = jwt.sign({ _id: obj?._id }, process.env.SECRET_KEY, {
@@ -1429,6 +1436,30 @@ async function transactionBoard(req, res) {
     userTransactionCount,
   });
 }
+
+async function checkReferral(req, res) {
+  const { referral } = req.body;
+  console.log("🚀 ~ checkReferral ~ referral:", referral);
+
+  const user = await userModel.findOne({
+    referralId: referral,
+  });
+  console.log("🚀 ~ checkReferral ~ user:", user);
+
+  if (!user) {
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.BAD_REQUEST,
+      msg: "invalid referralId!!",
+    });
+  }
+  return res.status(HTTP.SUCCESS).send({
+    status: true,
+    code: HTTP.SUCCESS,
+    msg: "valid referralId!!",
+    name: user?.name,
+  });
+}
 module.exports = {
   transactionBoard,
   leaderboard,
@@ -1443,6 +1474,7 @@ module.exports = {
   resendOTP,
   sendOtp,
   ForgetPassword,
+  checkReferral,
   resetPassword,
   getUserProfile,
   watchList,

@@ -25,6 +25,7 @@ route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
 route.get("/getUserReferals", authuser, userController.getReferrals);
+route.post("/checkReferral", userController.checkReferral);
 route.post(
   "/removeCoinWatchlist",
   authuser,
@@ -66,7 +67,7 @@ route.post("/EVMswap", kyberEVM.EVMSwapMain);
 
 // --------------------------------- qr code -------------------------------------------------------
 route.post("/getQrCode", qrCode.getQrCode);
-route.post("/getInviteQrCode", qrCode.getInviteQrCode)
+route.post("/getInviteQrCode", qrCode.getInviteQrCode);
 
 // ------------------------------------------- EVM token transfer api--------------------------------
 route.post("/transferEvmToken", transferEvm.sendERC20Token);
