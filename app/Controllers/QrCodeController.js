@@ -66,7 +66,7 @@ async function getQrCode(req, res) {
   }
 }
 
-async function getInvideQrCode(req, res) {
+async function getInviteQrCode(req, res) {
   try {
     const { referralId } = req.body;
 
@@ -105,4 +105,4 @@ async function getInvideQrCode(req, res) {
     console.log("🚀 ~ getQrCode ~ error:", error);
   }
 }
-module.exports = { getQrCode, getInvideQrCode };
+module.exports = { getQrCode, getInviteQrCode };

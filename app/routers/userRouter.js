@@ -66,7 +66,7 @@ route.post("/EVMswap", kyberEVM.EVMSwapMain);
 
 // --------------------------------- qr code -------------------------------------------------------
 route.post("/getQrCode", qrCode.getQrCode);
-route.post("/getInvideQrCode", qrCode.getInvideQrCode)
+route.post("/getInviteQrCode", qrCode.getInviteQrCode)
 
 // ------------------------------------------- EVM token transfer api--------------------------------
 route.post("/transferEvmToken", transferEvm.sendERC20Token);

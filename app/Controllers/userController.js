@@ -994,14 +994,14 @@ async function startBot(req, res) {
       status: false,
       code: HTTP.BAD_REQUEST,
       msg: "please login!",
-      isLogin,
+      data: {},
     });
   }
   return res.status(HTTP.SUCCESS).send({
     status: true,
     code: HTTP.SUCCESS,
     msg: "already loggin!!",
-    data: {},
+    isLogin,
   });
 }
 // -------------------------------------------------- logout ------------------------------------
