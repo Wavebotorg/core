@@ -32,6 +32,8 @@ route.post(
   userController.removeCoinWatchlist
 );
 route.post("/fetchbalance", userController.fetchBalance);
+route.post("/getSingleTokenPrice", userController.getSingleTokenPrice);
+route.post("/getSolanaSingleTokenPrice", userController.getSolanaSingleTokenPrice);
 route.get("/leaderBoardList", authuser, userController.leaderboard);
 route.get("/transactionBoardList", authuser, userController.transactionBoard);
 

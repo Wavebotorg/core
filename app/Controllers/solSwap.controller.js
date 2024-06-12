@@ -149,10 +149,14 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
           maxRetries: 2,
         });
         console.log("🚀 ~ swapTokens ~ txid:", txid);
-        const confirmTransaction = await connection.confirmTransaction(txid);
+        const confirmTran = await connection.confirmTransaction(txid);
+        console.log(
+          "🚀 ~ swapTokens ~ confirmTransaction:",
+          confirmTran
+        );
         console.log(`https://solscan.io/tx/${txid}`);
 
-        return { txid, confirmTransaction };
+        return { txid, confirmTran }; 
       } catch (error) {}
     }
 

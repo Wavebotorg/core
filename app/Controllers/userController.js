@@ -19,6 +19,7 @@ const { swapToken } = require("../Controllers/uniswapTrader");
 const { decrypt } = require("mongoose-field-encryption");
 const TxnEvm = require("../Models/TXNevmSwap");
 const { createBTCWallet } = require("../../utils/createBitcoinWallet");
+const { url } = require("inspector");
 
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
@@ -768,7 +769,7 @@ async function allWatchList(req, res) {
       data: newusers.watchlist.reverse(),
     });
   } catch (error) {
-    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+    return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
       msg: "Something went wrong!",
@@ -794,14 +795,14 @@ const removeCoinWatchlist = async (req, res) => {
         data: updatedUser.watchlist,
       });
     else
-      return res.status(HTTP.NOT_FOUND).send({
+      return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.NOT_FOUND,
         msg: "User not found or coin not in Watchlist.",
         data: {},
       });
   } catch (error) {
-    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+    return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
       msg: "Something went wrong!",
@@ -877,6 +878,96 @@ const fetchBalance = async (req, res) => {
     });
   }
 };
+
+//  get indivudual Evm token price
+async function getSingleTokenPrice(req, res) {
+  try {
+    const { chain, address } = req.body;
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
+    const response = await Moralis.EvmApi.token.getTokenPrice({
+      chain,
+      include: "percent_change",
+      address,
+    });
+    if (!response) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "token is not supported!!",
+        data: {},
+      });
+    }
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "token details fetched!!",
+      data: response,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getSingleTokenPrice ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "somthing has been wrong!!",
+      data: {},
+    });
+  }
+}
+// get single solana token price
+async function getSolanaSingleTokenPrice(req, res) {
+  try {
+    const { address } = req.body;
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
+    const tokenPrice = await Moralis.SolApi.token.getTokenPrice({
+      network: "mainnet",
+      address,
+    });
+    console.log("🚀 ~ getSolanaSingleTokenPrice ~ tokenPrice:", tokenPrice);
+
+    const tokenMetaData = await axios({
+      url: `https://solana-gateway.moralis.io/token/mainnet/${address}/metadata`,
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        "X-API-Key": process.env.PUBLIC_MORALIS_API_KEY,
+      },
+    });
+    if (!(tokenPrice && tokenMetaData)) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "token is not supported!!",
+        data: {},
+      });
+    }
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "token details fetched!!",
+      data: {
+        address: tokenMetaData?.data?.mint,
+        name: tokenMetaData?.data?.name,
+        price: tokenPrice?.jsonResponse?.usdPrice,
+      },
+    });
+  } catch (error) {
+    console.log("🚀 ~ getSingleTokenPrice ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "somthing has been wrong!!",
+      data: {},
+    });
+  }
+}
 const mainswap = async (req, res) => {
   let { token0, token1, amountIn, chainId, chatId, network, email } = req.body;
   if (!token0 || !token1 || !chainId) {
@@ -1149,79 +1240,6 @@ async function refferalsLevel(data) {
   }
   return users;
 }
-
-// async function getReferrals(req, res) {
-//   try {
-//     const { _id } = req.user;
-//     console.log("🚀 ~ getReferrals ~ _id:", _id);
-
-//     const referrals = await userModel.aggregate([
-//       {
-//         $match: { _id: _id },
-//       },
-//       {
-//         $graphLookup: {
-//           from: "users",
-//           startWith: "$_id",
-//           connectFromField: "_id",
-//           connectToField: "referred",
-//           as: "referrals",
-//           maxDepth: 5,
-//           depthField: "level",
-//         },
-//       },
-//       {
-//         $unwind: "$referrals",
-//       },
-//       {
-//         $lookup: {
-//           from: "users",
-//           localField: "referrals.referred",
-//           foreignField: "_id",
-//           as: "referredUser",
-//         },
-//       },
-//       {
-//         $unwind: "$referredUser",
-//       },
-//       {
-//         $group: {
-//           _id: "$referrals.level",
-//           users: {
-//             $push: {
-//               name: "$referrals.name",
-//               email: "$referrals.email",
-//               referred: "$referredUser.name",
-//               createdAt: "$referrals.createdAt",
-//             },
-//           },
-//         },
-//       },
-//       {
-//         $sort: { _id: 1 }, // Sort by level
-//       },
-//     ]);
-
-//     let levels = {};
-//     referrals.forEach((level) => {
-//       levels[`level${level._id + 1}`] = level.users;
-//     });
-
-//     return res.status(HTTP.SUCCESS).send({
-//       status: true,
-//       code: HTTP.SUCCESS,
-//       msg: "Referral fetched!!",
-//       data: levels,
-//     });
-//   } catch (error) {
-//     console.log("🚀 ~ getReferrals ~ error:", error);
-//     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
-//       status: false,
-//       code: HTTP.INTERNAL_SERVER_ERROR,
-//       msg: "Something went wrong!!",
-//     });
-//   }
-// }
 async function getReferrals(req, res) {
   try {
     const { _id } = req.user;
@@ -1479,9 +1497,11 @@ module.exports = {
   getUserProfile,
   watchList,
   allWatchList,
+  getSingleTokenPrice,
   removeCoinWatchlist,
   recentUsers,
   fetchBalance,
+  getSolanaSingleTokenPrice,
   mainswap,
   changePassword,
   //getWalletInfo,
