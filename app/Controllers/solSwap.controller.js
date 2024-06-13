@@ -150,13 +150,10 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         });
         console.log("🚀 ~ swapTokens ~ txid:", txid);
         const confirmTran = await connection.confirmTransaction(txid);
-        console.log(
-          "🚀 ~ swapTokens ~ confirmTransaction:",
-          confirmTran
-        );
+        console.log("🚀 ~ swapTokens ~ confirmTransaction:", confirmTran);
         console.log(`https://solscan.io/tx/${txid}`);
 
-        return { txid, confirmTran }; 
+        return { txid, confirmTran };
       } catch (error) {}
     }
 
@@ -250,11 +247,6 @@ async function solanaSwapping(req, res) {
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
       console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails);
-      // const inputDesimals = await getWalletInfoDes(
-      //   walletDetails?.solanawallet,
-      //   input
-      // );
-      // console.log("🚀 ~ solanaSwapping ~ inputDesimals:", inputDesimals);
       const tokenMint = new PublicKey(input);
       const tokenAccountInfo = await connection.getAccountInfo(tokenMint);
       const inputDesimals = tokenAccountInfo?.data?.slice(44, 45)[0];
@@ -292,13 +284,14 @@ async function solanaSwapping(req, res) {
         });
       }
 
-      if (confirmTransactionDetails?.confirmTransaction?.value?.err) {
+      if (confirmTransactionDetails?.value?.err) {
         console.log(
           "🚀 ~ solanaSwapping ~ confirmTransactionDetails?.confirmTransaction?.value?.err:",
           confirmTransactionDetails?.confirmTransaction?.value?.err
         );
         return res.status(200).send({
           status: false,
+          code: 501,
           message:
             "due to network error transaction has been failed please try again later!!",
         });
@@ -314,10 +307,6 @@ async function solanaSwapping(req, res) {
         chainId: 19999,
         method: method,
       });
-      console.log(
-        "🚀 ~ solanaSwapping ~ transactionCreated:",
-        transactionCreated
-      );
       return res.status(200).send({
         status: true,
         message: "Transaction Successful!",
