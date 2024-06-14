@@ -75,21 +75,21 @@ const ChainName = {
   SCROLL: `scroll`,
 };
 const desCode = {
-  MAINNET: `0x1`,
-  BSC: `0x38`,
-  ARBITRUM: `0xa4b1`,
-  MATIC: `0x89`,
-  OPTIMISM: `0xa`,
-  AVAX: `0xa86a`,
-  BASE: `0x2105`,
+  ethereum: `0x1`,
+  bsc: `0x38`,
+  arbitrum: `0xa4b1`,
+  polygon: `0x89`,
+  optimism: `0xa`,
+  avalanche: `0xa86a`,
+  base: `0x2105`,
   CRONOS: `0x19`,
-  ZKSYNC: `zksync`,
-  FANTOM: `0xfa`,
-  LINEA: `0xe705`,
-  POLYGONZKEVM: `polygon-zkevm`,
-  AURORA: `aurora`,
-  BTTC: `bittorrent`,
-  SCROLL: `scroll`,
+  zksync: `zksync`,
+  fantom: `0xfa`,
+  linea: `0xe705`,
+  "polygon-zkevm ": `polygon-zkevm`,
+  aurora: `aurora`,
+  bittorrent: `bittorrent`,
+  scroll: `scroll`,
 };
 
 const ChainId = {
@@ -127,4 +127,4 @@ const tokenOut = {
   name: "KyberNetwork Crystal v2 (PoS)",
 };
 
-module.exports = { ChainName, ChainId, tokenIn, tokenOut, networkUrl,chainUrl };
+module.exports = { ChainName, ChainId, tokenIn, tokenOut, networkUrl,chainUrl,desCode };

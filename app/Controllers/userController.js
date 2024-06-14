@@ -839,7 +839,7 @@ const fetchBalance = async (req, res) => {
         status: true,
         code: HTTP.OK,
         message: "Here is token",
-        data: tokens?.slice(0, 5),
+        data: tokens,
       });
     } else if (req.body.email) {
       const { email, chainId } = req.body;
@@ -882,7 +882,10 @@ const fetchBalance = async (req, res) => {
 //  get indivudual Evm token price
 async function getSingleTokenPrice(req, res) {
   try {
-    const { chain, address } = req.body;
+    const { chain, address, nativeToken, chatId } = req.body;
+    console.log("🚀 ~ getSingleTokenPrice ~ nativeToken:", nativeToken);
+    const userfind = await getWalletInfo(chatId);
+    console.log("🚀 ~ getSingleTokenPrice ~ userfind:", userfind);
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
         apiKey: process.env.PUBLIC_MORALIS_API_KEY,
@@ -893,6 +896,22 @@ async function getSingleTokenPrice(req, res) {
       include: "percent_change",
       address,
     });
+    const response2 = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
+      chain,
+      address: userfind?.wallet,
+    });
+    const rawResponse = response2?.raw();
+    console.log(
+      "🚀 ~ getSingleTokenPrice ~ rawResponse:",
+      rawResponse?.result[1]?.token_address
+    );
+    const nativeTokenDetails = await rawResponse?.result.filter(
+      (item) => item?.token_address == nativeToken?.toLowerCase()
+    );
+    console.log(
+      "🚀 ~ getSingleTokenPrice ~ nativeTokenDetails:",
+      nativeTokenDetails
+    );
     if (!response) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -906,6 +925,7 @@ async function getSingleTokenPrice(req, res) {
       code: HTTP.SUCCESS,
       msg: "token details fetched!!",
       data: response,
+      nativeToken: nativeTokenDetails,
     });
   } catch (error) {
     console.log("🚀 ~ getSingleTokenPrice ~ error:", error);

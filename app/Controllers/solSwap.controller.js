@@ -154,7 +154,9 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         console.log(`https://solscan.io/tx/${txid}`);
 
         return { txid, confirmTran };
-      } catch (error) {}
+      } catch (error) {
+        console.log("🚀 ~ swapTokens ~ error:", error);
+      }
     }
 
     // return await response.json();
