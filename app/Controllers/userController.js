@@ -950,7 +950,7 @@ async function getSolanaSingleTokenPrice(req, res) {
       network: "mainnet",
       address,
     });
-    console.log("🚀 ~ getSolanaSingleTokenPrice ~ tokenPrice:", tokenPrice);
+    console.log("🚀 ~ getSolanaSingleTokenPrice ~ tokenPrice:", tokenPrice)
 
     const tokenMetaData = await axios({
       url: `https://solana-gateway.moralis.io/token/mainnet/${address}/metadata`,
