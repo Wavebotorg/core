@@ -59,6 +59,9 @@ router.post("/transactions", authadmin, transactions.evmtransaction);
 //  get user transactions
 router.post("/userTransactions", authadmin, adminController.usertransaction);
 
+// get transaction volume
+router.get("/getTransactionVolume", adminController.getVolume);
+
 // get solana transactions
 // router.post("/solanaTransactions", authadmin, transactions.solanatransaction);
 

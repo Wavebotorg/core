@@ -26,7 +26,7 @@ const transferSchema = new mongoose.Schema(
     },
     method: {
       type: String,
-      default: "Transfer",
+      default: "transfer",
     },
   },
   { timestamps: true }

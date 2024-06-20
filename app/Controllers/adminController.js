@@ -614,64 +614,6 @@ const getUsersCountByPeriod = async (req, res) => {
       lastYear: usersLastYear,
       lastDay: usersLastDay,
     });
-
-    // user ni details sathe
-
-    // const oneWeekAgo = moment().subtract(1, 'week');
-    // const oneMonthAgo = moment().subtract(1, 'month');
-    // const oneYearAgo = moment().subtract(1, 'year');
-    // const oneDayAgo = moment().subtract(1, 'day');
-
-    // const userCount = await userModel.countDocuments({ role: "user" });
-    // const usersLastWeek = await userModel.find({
-    //     $and: [
-    //         { createdAt: { $gte: oneWeekAgo } }, // Documents created within the last week
-    //         { role: 'user' } // Documents with role 'user'
-    //     ]
-    // }).select('-password -otp -role');
-
-    // const usersLastMonth = await userModel.find({
-    //     $and: [
-    //         { createdAt: { $gte: oneMonthAgo } }, // Documents created within the last month
-    //         { role: 'user' } // Documents with role 'user'
-    //     ]
-    // }).select('-password -otp -role');
-
-    // const usersLastYear = await userModel.find({
-    //     $and: [
-    //         { createdAt: { $gte: oneYearAgo } }, // Documents created within the last year
-    //         { role: 'user' } // Documents with role 'user'
-    //     ]
-    // }).select('-password -otp -role');
-
-    // const usersLastDay = await userModel.find({
-    //     $and: [
-    //         { createdAt: { $gte: oneDayAgo } }, // Documents created within the last day
-    //         { role: 'user' } // Documents with role 'user'
-    //     ]
-    // }).select('-password -otp -role');
-
-    // return res.status(HTTP.SUCCESS).json({
-    //     status: true,
-    //     code: HTTP.SUCCESS,
-    // userCount: userCount,
-    //     lastWeek: {
-    //         count: usersLastWeek.length,
-    //         data: usersLastWeek
-    //     },
-    //     lastMonth: {
-    //         count: usersLastMonth.length,
-    //         data: usersLastMonth
-    //     },
-    //     lastYear: {
-    //         count: usersLastYear.length,
-    //         data: usersLastYear
-    //     },
-    //     lastDay: {
-    //         count: usersLastDay.length,
-    //         data: usersLastDay
-    //     }
-    // });
   } catch (error) {
     console.error(error);
     return res.status(HTTP.SUCCESS).json({
@@ -685,88 +627,155 @@ const getUsersCountByPeriod = async (req, res) => {
 async function usertransaction(req, res) {
   const { userId, chainId, method } = req.body;
 
-  if (!(userId || chainId || method)) {
-    return res.status(HTTP.SUCCESS).send({
-      status: false,
-      code: HTTP.BAD_REQUEST,
-      msg: "All fields are required!!",
-    });
-  }
+  try {
+    if (!(userId || chainId || method)) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "All fields are required!!",
+      });
+    }
 
-  let networkName;
-  switch (chainId) {
-    case 1:
-      networkName = "Ethereum";
-      break;
-    case 42161:
-      networkName = "Arbitrum";
-      break;
-    case 137:
-      networkName = "Polygon";
-      break;
-    case 8453:
-      networkName = "Base";
-      break;
-    case 10:
-      networkName = "Optimistic";
-      break;
-    case 43114:
-      networkName = "Avalanche";
-      break;
-    case 56:
-      networkName = "BNB";
-      break;
-    case 324:
-      networkName = "ZKSYNC";
-      break;
-    case 25:
-      networkName = "Cronos";
-      break;
-    case 250:
-      networkName = "Fantom";
-      break;
-    default:
-      break;
-  }
-  if (method == "transfer") {
-    const transactions = await transfer
-      .find({
+    let networkName;
+    switch (chainId) {
+      case 1:
+        networkName = "Ethereum";
+        break;
+      case 42161:
+        networkName = "Arbitrum";
+        break;
+      case 137:
+        networkName = "Polygon";
+        break;
+      case 8453:
+        networkName = "Base";
+        break;
+      case 10:
+        networkName = "Optimistic";
+        break;
+      case 43114:
+        networkName = "Avalanche";
+        break;
+      case 56:
+        networkName = "BNB";
+        break;
+      case 324:
+        networkName = "ZKSYNC";
+        break;
+      case 25:
+        networkName = "Cronos";
+        break;
+      case 250:
+        networkName = "Fantom";
+        break;
+      default:
+        break;
+    }
+    if (method == "transfer") {
+      const transactions = await transfer
+        .find({
+          userId: userId,
+          network: chainId,
+        })
+        .select("-userId")
+        .sort({ createdAt: -1 });
+      if (!transactions) {
+        console.log(
+          "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
+        );
+      }
+
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "EVM transactions fetch!!",
+        transactions,
+        networkName,
+      });
+    } else {
+      const transactions = await TxnEvm.find({
         userId: userId,
-        network: chainId,
+        chainId,
+        method: new RegExp(`^${method}$`, "i"),
       })
-      .select("-userId")
-      .sort({ createdAt: -1 });
-    if (!transactions) {
-      console.log(
-        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
-      );
+        .select("-userId")
+        .sort({ createdAt: -1 });
+      if (!transactions) {
+        console.log(
+          "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
+        );
+      }
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "EVM transactions fetch!!",
+        transactions,
+      });
+    }
+  } catch (error) {
+    console.log("🚀 ~ usertransaction ~ error:", error);
+    return res.status(HTTP.SUCCESS).json({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Internal Server Error",
+    });
+  }
+}
+
+async function getVolume(req, res) {
+  try {
+    const volume = await TxnEvm.aggregate([
+      {
+        $group: {
+          _id: "$method",
+          total: {
+            $sum: "$dollar",
+          },
+        },
+      },
+      {
+        $unionWith: {
+          coll: "transfers",
+          pipeline: [
+            {
+              $group: {
+                _id: "$method",
+                total: { $sum: "$dollar" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    console.log("🚀 ~ getVolume ~ volume:", volume);
+
+    if (!volume) {
+      return res.status(HTTP.SUCCESS).json({
+        status: false,
+        code: HTTP.INTERNAL_SERVER_ERROR,
+        msg: "somthing has been wrong!!!",
+      });
     }
 
-    return res.status(HTTP.SUCCESS).send({
-      status: true,
-      code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
-      transactions,
-      networkName,
+    // Transform the response
+    const formattedVolume = {};
+    volume.forEach((item) => {
+      if (item._id != null) {
+        formattedVolume[item._id] = item.total;
+      }
     });
-  } else {
-    const transactions = await TxnEvm.find({
-      userId: userId,
-      chainId,
-      method: new RegExp(`^${method}$`, "i"),
-    })
-      .select("-userId")
-      .sort({ createdAt: -1 });
-    if (!transactions) {
-      console.log(
-        "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
-      );
-    }
-    return res.status(HTTP.SUCCESS).send({
+    return res.status(HTTP.SUCCESS).json({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "EVM transactions fetch!!",
-      transactions,
+      msg: {},
+      volume: formattedVolume,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getVolume ~ error:", error);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Internal Server Error",
     });
   }
 }
@@ -776,6 +785,7 @@ module.exports = {
   getUpdateProfile,
   updateProfile,
   changePassword,
+  getVolume,
   showAllUser,
   showUser,
   deleteUser,
