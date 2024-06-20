@@ -28,8 +28,7 @@ async function getSolanaWalletInformation(walletaddress) {
   try {
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
-        apiKey:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjFjNmIxYWYyLTE0NjUtNGJiYy1hMTY1LWM3ZjMzMGNkY2EyZiIsIm9yZ0lkIjoiMzkwODI0IiwidXNlcklkIjoiNDAxNTkxIiwidHlwZUlkIjoiYzNjYTI5MzQtYTU5MS00YjQ4LTk0MjQtOTg0ZWVkMzZlMTA5IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTQ3OTExNDYsImV4cCI6NDg3MDU1MTE0Nn0.x5unFuOwUE_Mz366qua85jkp8a8QBdcj4QwNnrls6ao",
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
       });
     }
 
@@ -48,15 +47,13 @@ async function getSolanaWalletInformation(walletaddress) {
 }
 // ----------------------------------------- fetch balance and desimals----------------------------------------------
 
-const apikey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjFjNmIxYWYyLTE0NjUtNGJiYy1hMTY1LWM3ZjMzMGNkY2EyZiIsIm9yZ0lkIjoiMzkwODI0IiwidXNlcklkIjoiNDAxNTkxIiwidHlwZUlkIjoiYzNjYTI5MzQtYTU5MS00YjQ4LTk0MjQtOTg0ZWVkMzZlMTA5IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MTQ3OTExNDYsImV4cCI6NDg3MDU1MTE0Nn0.x5unFuOwUE_Mz366qua85jkp8a8QBdcj4QwNnrls6ao";
 async function getWalletInfoDes(tokenAddress, from) {
   console.log("🚀 ~ getWalletInfoDes ~ from:", from);
   console.log("🚀 ~ getWalletInfoDes ~ tokenAddress:", tokenAddress);
   try {
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
-        apiKey: apikey,
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
       });
     }
     const response1 = await Moralis.SolApi.account.getPortfolio({
@@ -72,7 +69,6 @@ async function getWalletInfoDes(tokenAddress, from) {
   } catch (error) {}
 }
 
-// const connection1 = new Connection('https://api.mainnet-beta.solana.com');
 
 // =---------------------------------------------------------------get quatation function ----------------------------------------------------------
 async function getSwapQuote(inputMint, outputMint, amount) {
@@ -111,14 +107,10 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // quoteResponse from /quote api
         quoteResponse: getQuote,
-        // user public key to be used for the swap
         userPublicKey: walletaddress,
-        // auto wrap and unwrap SOL. default is true
         wrapAndUnwrapSol: true,
-        // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
-        // feeAccount: "fee_account_public_key"
+        
       }),
     });
 
@@ -169,8 +161,20 @@ async function solanaSwapping(req, res) {
   const { input, output, chatId, amount, email, desBot, method } = req.body;
   console.log("🚀 ~ solanaSwapping ~ method:", method);
   console.log("🚀 ~ solanaSwapping ~ req.body:", req.body);
+  if (!Moralis.Core.isStarted) {
+    await Moralis.start({
+      apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+    });
+  }
+
   if (desBot) {
     try {
+      const response1 = await Moralis.SolApi.token.getTokenPrice({
+        network: "mainnet",
+        address: input,
+      });
+      let tokenInDollar = response1?.jsonResponse?.usdPrice * amount;
+      console.log("🚀 ~ solanaSwapping ~ tokenInDollar:", tokenInDollar);
       console.log(
         "------------ buy function run --------------------------------"
       );
@@ -227,6 +231,7 @@ async function solanaSwapping(req, res) {
         network: "solana",
         chainId: 19999,
         method: method,
+        dollar: Number(tokenInDollar?.toFixed(5)),
       });
       return res.status(200).send({
         status: true,
@@ -242,6 +247,12 @@ async function solanaSwapping(req, res) {
     }
   } else {
     try {
+      const response2 = await Moralis.SolApi.token.getTokenPrice({
+        network: "mainnet",
+        address: input,
+      });
+      let tokenInDollar2 = response2?.jsonResponse?.usdPrice * amount;
+      console.log("🚀 ~ solanaSwapping ~ tokenInDollar:", tokenInDollar2);
       console.log(
         "------------ swap function run --------------------------------"
       );
@@ -308,6 +319,7 @@ async function solanaSwapping(req, res) {
         network: "solana",
         chainId: 19999,
         method: method,
+        dollar: Number(tokenInDollar2?.toFixed(5)),
       });
       return res.status(200).send({
         status: true,
@@ -434,7 +446,7 @@ async function getSolanaTokenPrice(req, res) {
     console.log("----------------start---------------------");
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
-        apiKey: apikey,
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
       });
     }
     const response1 = await Moralis.SolApi.token.getTokenPrice({
@@ -490,7 +502,7 @@ async function getEvmTokenPrice(req, res) {
     console.log("----------------start---------------------");
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
-        apiKey: apikey,
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
       });
     }
     const response1 = await Moralis.EvmApi.token.getTokenPrice({

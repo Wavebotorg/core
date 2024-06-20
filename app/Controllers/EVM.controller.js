@@ -8,6 +8,7 @@ const TxnEvm = require("../Models/TXNevmSwap");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { getProvider } = require("../kibaSwap/provider");
 const { ethers } = require("ethers");
+const { default: Moralis } = require("moralis");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -27,6 +28,18 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
+    const response = await Moralis.EvmApi.token.getTokenPrice({
+      chain,
+      include: "percent_change",
+      address: tokenIn,
+    });
+    let amountInDollar = response?.jsonResponse?.usdPrice * amount;
+    console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
     // const desimals = await getEvmTokenMetadata(tokenIn, desCode);
     const provider = getProvider(chain, chainId);
     // find wallet details
@@ -142,6 +155,7 @@ async function EVMSwapMain(req, res) {
       network: chainId,
       chainId: chain,
       method: method,
+      dollar: Number(amountInDollar.toFixed(5)),
     });
     return res.status(HTTP.SUCCESS).send({
       status: true,

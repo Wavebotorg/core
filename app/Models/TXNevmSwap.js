@@ -12,6 +12,9 @@ const txnEvmSwap = new mongoose.Schema(
     amount: {
       type: Number,
     },
+    dollar: {
+      type: Number,
+    },
     from: {
       type: String,
     },

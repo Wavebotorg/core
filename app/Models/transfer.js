@@ -18,13 +18,16 @@ const transferSchema = new mongoose.Schema(
     amount: {
       type: Number,
     },
+    dollar: {
+      type: Number,
+    },
     tx: {
       type: String,
     },
     method: {
       type: String,
-      default:"Transfer"
-    }
+      default: "Transfer",
+    },
   },
   { timestamps: true }
 );

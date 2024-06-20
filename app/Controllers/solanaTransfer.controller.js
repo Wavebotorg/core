@@ -1,5 +1,6 @@
 const web3 = require("@solana/web3.js");
 const spl = require("@solana/spl-token");
+const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
 
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
@@ -8,6 +9,11 @@ const { PublicKey, Keypair, Connection, LAMPORTS_PER_SOL } = web3;
 
 async function solanaTransfer(req, res) {
   try {
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
     const { email, chatId, toWallet, token, amount } = req.body;
     console.log("🚀 ~ solanaTransfer ~ amount:", amount);
     console.log("🚀 ~ solanaTransfer ~ token:", token);
@@ -30,6 +36,12 @@ async function solanaTransfer(req, res) {
       });
     }
 
+    const response1 = await Moralis.SolApi.token.getTokenPrice({
+      network: "mainnet",
+      address: token,
+    });
+    let tokenInDollar = response1?.jsonResponse?.usdPrice * amount;
+    console.log("🚀 ~ solanaTransfer ~ tokenInDollar:", tokenInDollar);
     // Connection with Solana blockchain
     const connection = new Connection(process.env.SOLANA_RPC_URL, "confirmed");
 
@@ -133,6 +145,7 @@ async function solanaTransfer(req, res) {
       network: 19999,
       amount,
       tx: signature,
+      dollar: Number(tokenInDollar.toFixed(5)),
     });
     return res.status(HTTP.SUCCESS).send({
       status: true,

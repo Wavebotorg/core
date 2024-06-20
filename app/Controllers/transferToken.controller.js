@@ -2,7 +2,9 @@ const { ethers } = require("ethers");
 const HTTP = require("../../constants/responseCode.constant");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
+const { default: Moralis } = require("moralis");
 const { chainUrl } = require("../kibaSwap/constant");
+
 
 async function sendERC20Token(req, res) {
   try {
@@ -25,9 +27,21 @@ async function sendERC20Token(req, res) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "All 2 fileds are required!!",
+        message: "All fileds are required!!",
       });
     }
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
+    const response = await Moralis.EvmApi.token.getTokenPrice({
+      chain,
+      include: "percent_change",
+      address: token,
+    });
+    let amountInDollar = response?.jsonResponse?.usdPrice * amount;
+    console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
     let providerUrl;
     switch (chain) {
       case 1:
@@ -137,13 +151,14 @@ async function sendERC20Token(req, res) {
       network: chain,
       amount,
       tx: receipt?.transactionHash,
+      dollar: Number(amountInDollar.toFixed(5)),
     });
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "transaction successfull!!",
       tx: receipt?.transactionHash,
-      txUrl: `${chainUrl[chain]?.url}${receipt?.transactionHash}`
+      txUrl: `${chainUrl[chain]?.url}${receipt?.transactionHash}`,
     });
   } catch (error) {
     console.log("🚀 ~ sendERC20Token ~ error:", error?.message);
