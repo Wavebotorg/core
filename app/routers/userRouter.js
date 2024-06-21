@@ -10,6 +10,7 @@ const kyberEVM = require("../Controllers/EVM.controller");
 const qrCode = require("../Controllers/QrCodeController");
 const transferEvm = require("../Controllers/transferToken.controller");
 const solanaTransfer = require("../Controllers/solanaTransfer.controller");
+const dex = require("../Controllers/dex.controller")
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -77,4 +78,5 @@ route.post("/transferEvmToken", transferEvm.sendERC20Token);
 // ------------------------------------------- solana token transfer api--------------------------------
 route.post("/transferSolanaToken", solanaTransfer.solanaTransfer);
 
+route.get("/dex",dex.dexapi)
 module.exports = route;
