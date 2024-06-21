@@ -346,7 +346,7 @@ async function solanaBalanceFetch(req, res) {
         return res.status(HTTP.SUCCESS).send({
           status: false,
           code: HTTP.BAD_REQUEST,
-          message: "User not found !",
+          message: "User not found!",
           data: {},
         });
       }

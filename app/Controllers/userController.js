@@ -901,10 +901,6 @@ async function getSingleTokenPrice(req, res) {
       address: userfind?.wallet,
     });
     const rawResponse = response2?.raw();
-    console.log(
-      "🚀 ~ getSingleTokenPrice ~ rawResponse:",
-      rawResponse?.result[1]?.token_address
-    );
     const nativeTokenDetails = await rawResponse?.result.filter(
       (item) => item?.token_address == nativeToken?.toLowerCase()
     );
