@@ -48,10 +48,14 @@ async function postSwapRouteV1(
         routeSummary: routeSummary,
         sender: signerAddress,
         recipient: signerAddress,
-        slippageTolerance: 10, // 0.1%
+        slippageTolerance: 50, // 0.1%
       },
     });
-
+    // 0 to 1 SOL: 0.5 % (50 basis points)
+    // 1 to 10 SOL: 0.7 % (70 basis points)
+    // 10 to 50 SOL: 1 % (100 basis points)
+    // 50 to 100 SOL: 1.5 % (150 basis points)
+    // 100 + SOL: 2 % (200 basis points)
     // console.log(`[V1] POST Response:`, encodeResponse?.data?.data);
     console.log(`encoded data get successfullu!!`);
 
