@@ -11,6 +11,9 @@ const { default: Moralis } = require("moralis");
 const HTTP = require("../../constants/responseCode.constant");
 const userModel = require("../Models/userModel");
 const TxnEvm = require("../Models/TXNevmSwap");
+const {
+  transactionSenderAndConfirmationWaiter,
+} = require("../../utils/transactionSender");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
 // const provider = new ethers
@@ -69,7 +72,6 @@ async function getWalletInfoDes(tokenAddress, from) {
   } catch (error) {}
 }
 
-
 // =---------------------------------------------------------------get quatation function ----------------------------------------------------------
 async function getSwapQuote(inputMint, outputMint, amount) {
   const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=50`; // Change 0.001 to a valid integer value
@@ -110,7 +112,6 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         quoteResponse: getQuote,
         userPublicKey: walletaddress,
         wrapAndUnwrapSol: true,
-        
       }),
     });
 
@@ -136,22 +137,24 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
 
       try {
         const rawTransaction = transaction.serialize();
-        const txid = await connection.sendRawTransaction(rawTransaction, {
-          skipPreflight: true,
-          maxRetries: 2,
+        console.log("🚀 ~ swapTokens ~ rawTransaction:", rawTransaction);
+        const sendTransaction = await transactionSenderAndConfirmationWaiter({
+          connection,
+          serializedTransaction: rawTransaction,
+          blockhashWithExpiryBlockHeight: {
+            blockhash: transaction?.message.recentBlockhash,
+            lastValidBlockHeight: swapResponse?.lastValidBlockHeight,
+          },
         });
-        console.log("🚀 ~ swapTokens ~ txid:", txid);
-        const confirmTran = await connection.confirmTransaction(txid);
-        console.log("🚀 ~ swapTokens ~ confirmTransaction:", confirmTran);
-        console.log(`https://solscan.io/tx/${txid}`);
-
-        return { txid, confirmTran };
+        console.log(
+          "🚀 ~ swapTokens ~ sendTransaction:",
+          sendTransaction?.transaction?.signatures[0]
+        );
+        return sendTransaction?.transaction?.signatures[0];
       } catch (error) {
         console.log("🚀 ~ swapTokens ~ error:", error);
       }
     }
-
-    // return await response.json();
   } catch (error) {
     console.log("🚀 ~ swapTokens ~ error:", error);
   }
@@ -192,39 +195,24 @@ async function solanaSwapping(req, res) {
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
-      const confirmTransactionDetails = await swapTokens(
+      const txId = await swapTokens(
         input,
         output,
         amountSOL,
         mainWallet,
         walletDetails.solanawallet
       );
-      console.log(
-        "🚀 ~ solanaSwapping ~ confirmTransactionDetails:",
-        confirmTransactionDetails
-      );
-      if (!confirmTransactionDetails) {
+      if (!txId) {
         return res.status(200).send({
           status: false,
           message: "transaction not confirmed. Please try again later.",
         });
       }
 
-      if (confirmTransactionDetails?.confirmTransaction?.value?.err) {
-        console.log(
-          "🚀 ~ solanaSwapping ~ confirmTransactionDetails?.confirmTransaction?.value?.err:",
-          confirmTransactionDetails?.confirmTransaction?.value?.err
-        );
-        return res.status(200).send({
-          status: false,
-          message:
-            "due to network error transaction has been failed please try again later!!",
-        });
-      }
-      console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
+      console.log("🚀 ~ solanaSwapping ~ txId:", txId);
       const transactionCreated = await TxnEvm.create({
         userId: walletDetails?.id,
-        txid: confirmTransactionDetails?.txid,
+        txid: txId,
         amount: amount,
         from: input,
         to: output,
@@ -279,40 +267,23 @@ async function solanaSwapping(req, res) {
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
-      const confirmTransactionDetails = await swapTokens(
+      const txId = await swapTokens(
         input,
         output,
         amountSOL,
         mainWallet,
         walletDetails.solanawallet
       );
-      console.log(
-        "🚀 ~ solanaSwapping ~ confirmTransactionDetails:",
-        confirmTransactionDetails
-      );
-      if (!confirmTransactionDetails) {
+      console.log("🚀 ~ solanaSwapping ~ txId:", txId);
+      if (!txId) {
         return res.status(200).send({
           status: false,
           message: "transaction not confirmed. Please try again later.",
         });
       }
-
-      if (confirmTransactionDetails?.value?.err) {
-        console.log(
-          "🚀 ~ solanaSwapping ~ confirmTransactionDetails?.confirmTransaction?.value?.err:",
-          confirmTransactionDetails?.confirmTransaction?.value?.err
-        );
-        return res.status(200).send({
-          status: false,
-          code: 501,
-          message:
-            "due to network error transaction has been failed please try again later!!",
-        });
-      }
-      console.log(`https://solscan.io/tx/${confirmTransactionDetails?.txid}`);
       const transactionCreated = await TxnEvm.create({
         userId: walletDetails?.id,
-        txid: confirmTransactionDetails?.txid,
+        txid: txId,
         amount: amount,
         from: input,
         to: output,
