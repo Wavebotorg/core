@@ -8,6 +8,7 @@ const {
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const ethers = require("ethers");
 const { default: Moralis } = require("moralis");
+const axios = require("axios");
 const HTTP = require("../../constants/responseCode.constant");
 const userModel = require("../Models/userModel");
 const TxnEvm = require("../Models/TXNevmSwap");
@@ -172,11 +173,15 @@ async function solanaSwapping(req, res) {
 
   if (desBot) {
     try {
-      const response1 = await Moralis.SolApi.token.getTokenPrice({
-        network: "mainnet",
-        address: input,
+      const price = await axios({
+        url: `https://public-api.dextools.io/standard/v2/token/solana/${input}/price`,
+        method: "get",
+        headers: {
+          accept: "application/json",
+          "x-api-key": process.env.DEXTOOLAPIKEY,
+        },
       });
-      let tokenInDollar = response1?.jsonResponse?.usdPrice * amount;
+      let tokenInDollar = price?.data?.data?.price * amount;
       console.log("🚀 ~ solanaSwapping ~ tokenInDollar:", tokenInDollar);
       console.log(
         "------------ buy function run --------------------------------"
@@ -235,11 +240,15 @@ async function solanaSwapping(req, res) {
     }
   } else {
     try {
-      const response2 = await Moralis.SolApi.token.getTokenPrice({
-        network: "mainnet",
-        address: input,
+      const price = await axios({
+        url: `https://public-api.dextools.io/standard/v2/token/solana/${input}/price`,
+        method: "get",
+        headers: {
+          accept: "application/json",
+          "x-api-key": process.env.DEXTOOLAPIKEY,
+        },
       });
-      let tokenInDollar2 = response2?.jsonResponse?.usdPrice * amount;
+      let tokenInDollar2 = price?.data?.data?.price * amount;
       console.log("🚀 ~ solanaSwapping ~ tokenInDollar:", tokenInDollar2);
       console.log(
         "------------ swap function run --------------------------------"

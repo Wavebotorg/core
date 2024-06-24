@@ -9,6 +9,7 @@ const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { getProvider } = require("../kibaSwap/provider");
 const { ethers } = require("ethers");
 const { default: Moralis } = require("moralis");
+const { default: axios } = require("axios");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -28,19 +29,17 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
-    if (!Moralis.Core.isStarted) {
-      await Moralis.start({
-        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
-      });
-    }
-    const response = await Moralis.EvmApi.token.getTokenPrice({
-      chain,
-      include: "percent_change",
-      address: tokenIn,
+
+    const price = await axios({
+      url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenIn}/price`,
+      method: "get",
+      headers: {
+        accept: "application/json",
+        "x-api-key": process.env.DEXTOOLAPIKEY,
+      },
     });
-    let amountInDollar = response?.jsonResponse?.usdPrice * amount;
+    let amountInDollar = price?.data?.data?.price * amount;
     console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
-    // const desimals = await getEvmTokenMetadata(tokenIn, desCode);
     const provider = getProvider(chain, chainId);
     // find wallet details
     const walletDetails =
