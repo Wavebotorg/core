@@ -26,7 +26,7 @@ async function postSwapRouteV1(
     email,
     chatId
   );
-  const routeSummary = swapRouteData.routeSummary;
+  const routeSummary = swapRouteData?.routeSummary;
   console.log("🚀 ~ postSwapRouteV1 ~ routeSummary:", routeSummary);
 
   // Get the signer's address
