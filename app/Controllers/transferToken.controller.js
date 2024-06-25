@@ -74,6 +74,9 @@ async function sendERC20Token(req, res) {
       case 250:
         providerUrl = process.env.INFURA_URL_TESTNET_FANTOM;
         break;
+      case 59144:
+        providerUrl = process.env.INFURA_URL_TESTNET_LINEA;
+        break;
       default:
         break;
     }
