@@ -29,6 +29,11 @@ async function EVMBuyMain(req, res) {
         message: "All fields are required!!",
       });
     }
+    if (!Moralis.Core.isStarted) {
+      await Moralis.start({
+        apiKey: process.env.PUBLIC_MORALIS_API_KEY,
+      });
+    }
 
     const provider = getProvider(chain, chainId);
     const walletDetails =
@@ -39,7 +44,6 @@ async function EVMBuyMain(req, res) {
       address: walletDetails?.wallet,
     });
     const rawResponse = response2?.raw();
-    console.log("🚀 ~ dexapi ~ rawResponse:", rawResponse);
     const nativeTokenDetails = await rawResponse?.result.filter(
       (item) =>
         item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
