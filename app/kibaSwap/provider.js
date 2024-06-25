@@ -39,6 +39,8 @@ function getProvider(chain, chainId) {
       providerUrl = process.env.INFURA_URL_TESTNET_LINEA;
       break;
     default:
+    case 81457:
+      providerUrl = process.env.INFURA_URL_TESTNET_BLAST
       break;
   }
   console.log("🚀 ~ getProvider ~ providerUrl:", providerUrl);

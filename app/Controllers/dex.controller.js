@@ -3,9 +3,13 @@ const HTTP = require("../../constants/responseCode.constant");
 const { default: Moralis } = require("moralis");
 const { getWalletInfo } = require("../../helpers");
 const { address } = require("bitcoinjs-lib");
+const { getEthBalance } = require("../kibaSwap/getBalanceOfNativeToken");
 
 async function dexapi(req, res) {
   const { token, chain, nativeToken, chatId, network } = req.body;
+  console.log("🚀 ~ dexapi ~ chain:", chain);
+  console.log("🚀 ~ dexapi ~ network:", network);
+  console.log("🚀 ~ dexapi ~ token:", token);
 
   try {
     if (!Moralis.Core.isStarted) {
@@ -14,16 +18,32 @@ async function dexapi(req, res) {
       });
     }
     const userfind = await getWalletInfo(chatId);
-    const response2 = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
-      chain,
-      address: userfind?.wallet,
-    });
-    const rawResponse = response2?.raw();
-    console.log("🚀 ~ dexapi ~ rawResponse:", rawResponse);
-    const nativeTokenDetails = await rawResponse?.result.filter(
-      (item) =>
-        item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-    );
+    let nativeTokenDetails;
+    if (chain == 81457) {
+      const data = await getEthBalance(userfind?.wallet);
+      console.log("🚀 ~ dexapi ~ data:", data);
+      nativeTokenDetails = [
+        {
+          symbol: "ETH",
+          name: "ether",
+          balance_formatted: data?.ethBalance,
+          usd_price: data?.ethPrice,
+          usd_value: data?.ethBalance * data?.ethPrice,
+        },
+      ];
+    } else {
+      const response2 =
+        await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
+          chain,
+          address: userfind?.wallet,
+        });
+      const rawResponse = response2?.raw();
+      console.log("🚀 ~ dexapi ~ rawResponse:", rawResponse);
+      nativeTokenDetails = await rawResponse?.result.filter(
+        (item) =>
+          item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      );
+    }
     const price = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${network}/${token}/price`,
       method: "get",
@@ -57,7 +77,7 @@ async function dexapi(req, res) {
       totalSupply: info?.data?.data?.totalSupply,
       circulatingSupply: info?.data?.data?.circulatingSupply,
       mcap: info?.data?.data?.mcap,
-      nativeTokenDetails: nativeTokenDetails[0],
+      nativeTokenDetails: nativeTokenDetails ? nativeTokenDetails[0] : null,
     };
 
     return res.status(HTTP.SUCCESS).send({

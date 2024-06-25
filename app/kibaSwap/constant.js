@@ -27,6 +27,12 @@ const networkUrl = {
   fantom: {
     url: "https://ftmscan.com/tx/",
   },
+  linea: {
+    url: "https://lineascan.build/tx/",
+  },
+  blast: {
+    url: "https://blastscan.io/tx/",
+  },
 };
 const chainUrl = {
   1: {
@@ -55,6 +61,12 @@ const chainUrl = {
   },
   250: {
     url: "https://ftmscan.com/tx/",
+  },
+  59144: {
+    url: "https://lineascan.build/tx/",
+  },
+  81457: {
+    url: "https://blastscan.io/tx/",
   },
 };
 const ChainName = {
@@ -127,4 +139,12 @@ const tokenOut = {
   name: "KyberNetwork Crystal v2 (PoS)",
 };
 
-module.exports = { ChainName, ChainId, tokenIn, tokenOut, networkUrl,chainUrl,desCode };
+module.exports = {
+  ChainName,
+  ChainId,
+  tokenIn,
+  tokenOut,
+  networkUrl,
+  chainUrl,
+  desCode,
+};

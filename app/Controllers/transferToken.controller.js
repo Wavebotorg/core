@@ -5,7 +5,6 @@ const transfer = require("../Models/transfer");
 const { default: Moralis } = require("moralis");
 const { chainUrl } = require("../kibaSwap/constant");
 
-
 async function sendERC20Token(req, res) {
   try {
     const { email, chatId, token, toWallet, amount, chain } = req.body;
@@ -76,6 +75,9 @@ async function sendERC20Token(req, res) {
         break;
       case 59144:
         providerUrl = process.env.INFURA_URL_TESTNET_LINEA;
+        break;
+      case 81457:
+        providerUrl = process.env.INFURA_URL_TESTNET_BLAST;
         break;
       default:
         break;

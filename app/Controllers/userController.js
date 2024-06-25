@@ -946,7 +946,7 @@ async function getSolanaSingleTokenPrice(req, res) {
       network: "mainnet",
       address,
     });
-    console.log("🚀 ~ getSolanaSingleTokenPrice ~ tokenPrice:", tokenPrice)
+    console.log("🚀 ~ getSolanaSingleTokenPrice ~ tokenPrice:", tokenPrice);
 
     const tokenMetaData = await axios({
       url: `https://solana-gateway.moralis.io/token/mainnet/${address}/metadata`,
@@ -1102,7 +1102,7 @@ async function startBot(req, res) {
         session: true,
       },
     })
-    .select("referralId name email");
+    .select("referralId name email wallet");
   if (!isLogin) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
