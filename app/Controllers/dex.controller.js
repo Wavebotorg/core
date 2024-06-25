@@ -19,8 +19,10 @@ async function dexapi(req, res) {
       address: userfind?.wallet,
     });
     const rawResponse = response2?.raw();
+    console.log("🚀 ~ dexapi ~ rawResponse:", rawResponse);
     const nativeTokenDetails = await rawResponse?.result.filter(
-      (item) => item?.token_address == nativeToken?.toLowerCase()
+      (item) =>
+        item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
     );
     const price = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${network}/${token}/price`,
@@ -132,7 +134,6 @@ async function dexSol(req, res) {
       data: data,
     });
   } catch (error) {
-    console.log("🚀 ~ dexSol ~ error:", error?.message);
     return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,

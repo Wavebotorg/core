@@ -7,6 +7,7 @@ const { authuser } = require("../middlewares/authuser");
 const solanaswapping = require("../Controllers/solSwap.controller");
 const transactions = require("../Controllers/transaction.controller");
 const kyberEVM = require("../Controllers/EVM.controller");
+const EVMBuy = require("../Controllers/buyEvmToken");
 const qrCode = require("../Controllers/QrCodeController");
 const transferEvm = require("../Controllers/transferToken.controller");
 const solanaTransfer = require("../Controllers/solanaTransfer.controller");
@@ -70,6 +71,7 @@ route.post("/meet", userController.meet);
 
 // ---------------------------------- kyber swap api --------------------------------------------------
 route.post("/EVMswap", kyberEVM.EVMSwapMain);
+route.post("/EVMBuy", EVMBuy.EVMBuyMain);
 
 // --------------------------------- qr code -------------------------------------------------------
 route.post("/getQrCode", qrCode.getQrCode);
