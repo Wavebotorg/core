@@ -1258,12 +1258,12 @@ async function refferalsLevel(data) {
 }
 async function getReferrals(req, res) {
   try {
-    const { _id } = req.user;
-    console.log("🚀 ~ getReferrals ~ _id:", _id);
+    const { email } = req.body;
+    console.log("🚀 ~ getReferrals ~ email:", email);
 
     const referrals = await userModel.aggregate([
       {
-        $match: { _id: _id },
+        $match: { email: email },
       },
       {
         $graphLookup: {

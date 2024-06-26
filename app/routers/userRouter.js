@@ -26,7 +26,7 @@ route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
-route.get("/getUserReferals", authuser, userController.getReferrals);
+route.post("/getUserReferals", userController.getReferrals);
 route.post("/checkReferral", userController.checkReferral);
 route.post(
   "/removeCoinWatchlist",
@@ -50,7 +50,7 @@ route.get("/viewbalance", authuser, coinController.viewBalance);
 route.post("/swapToken", SwapToken.swapToken);
 route.post("/solanaSwap", solanaswapping.solanaSwapping);
 route.post("/solanaBalance", solanaswapping.solanaBalanceFetch);
-route.post("/getSolanaTokenPrice", solanaswapping.getSolanaTokenPrice);
+route.post("/getSolanaTokenPrice", solanaswapping.getSolanaTokenPrice); 
 route.post(
   "/getSolanaWalletTokenBal",
   authuser,
