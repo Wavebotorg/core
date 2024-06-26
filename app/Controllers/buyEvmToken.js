@@ -10,6 +10,7 @@ const { getProvider } = require("../kibaSwap/provider");
 const { ethers } = require("ethers");
 const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
+const { getEthBalance } = require("../kibaSwap/getBalanceOfNativeToken");
 
 async function EVMBuyMain(req, res) {
   try {
@@ -39,17 +40,25 @@ async function EVMBuyMain(req, res) {
     const walletDetails =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
-    const response2 = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
-      chain,
-      address: walletDetails?.wallet,
-    });
-    const rawResponse = response2?.raw();
-    const nativeTokenDetails = await rawResponse?.result.filter(
-      (item) =>
-        item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-    );
-    let amountInDollar = nativeTokenDetails[0]?.usd_price * amount;
-    console.log("🚀 ~ EVMBuyMain ~ amountInDollar:", amountInDollar);
+    let amountInDollar;
+    if (chain == 81457) {
+      const data = await getEthBalance(walletDetails?.wallet);
+      amountInDollar = data?.ethPrice * amount;
+      console.log("🚀 ~ EVMBuyMain ~ amountInDollar:", amountInDollar);
+    } else {
+      const response2 =
+        await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
+          chain,
+          address: walletDetails?.wallet,
+        });
+      const rawResponse = response2?.raw();
+      const nativeTokenDetails = await rawResponse?.result.filter(
+        (item) =>
+          item?.token_address == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      );
+      amountInDollar = nativeTokenDetails[0]?.usd_price * amount;
+      console.log("🚀 ~ EVMBuyMain ~ amountInDollar:", amountInDollar);
+    }
     const swapData = await postSwapRouteV1(
       tokenIn,
       tokenOut,
