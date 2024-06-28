@@ -166,12 +166,15 @@ async function EVMBuyMain(req, res) {
       txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
-    if (error?.method === "estimateGas") {
+    console.log("🚀 ~ EVMSwapMain ~ error:", error?.code);
+    if (
+      error?.method === "estimateGas" ||
+      error?.code == "INSUFFICIENT_FUNDS"
+    ) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "Insufficient balance!!",
+        message: "Insufficient balance + gas!!",
       });
     }
     if (error?.code === "UNSUPPORTED_OPERATION") {
