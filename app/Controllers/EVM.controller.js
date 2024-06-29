@@ -130,7 +130,7 @@ async function EVMSwapMain(req, res) {
       from: signerAddress,
       to: routerContract,
       gasPrice: gasPrice, // Dynamic gas price
-      gasLimit: gasEstimate,
+      gasLimit: "300000",
     });
     const executeSwapTxReceipt = await executeSwapTx.wait();
     console.log(
