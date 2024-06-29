@@ -120,17 +120,17 @@ async function EVMSwapMain(req, res) {
     console.log(`Router contract address: ${routerContract}`);
     const gasPrice = await signer.getGasPrice();
     console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice);
-    // const gasEstimate = await signer.estimateGas({
-    //   to: routerContract,
-    //   data: encodedSwapData,
-    // });
-    // console.log("🚀 ~ EVMSwapMain ~ gasEstimate:", gasEstimate);
+    const gasEstimate = await signer.estimateGas({
+      to: routerContract,
+      data: encodedSwapData,
+    });
+    console.log("🚀 ~ EVMSwapMain ~ gasEstimate:", gasEstimate);
     const executeSwapTx = await signer.sendTransaction({
       data: encodedSwapData,
       from: signerAddress,
       to: routerContract,
       gasPrice: gasPrice, // Dynamic gas price
-      gasLimit: "300000",
+      gasLimit: gasEstimate,
     });
     const executeSwapTxReceipt = await executeSwapTx.wait();
     console.log(
