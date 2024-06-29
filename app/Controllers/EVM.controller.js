@@ -17,6 +17,7 @@ async function EVMSwapMain(req, res) {
       req.body;
     console.log("🚀 ~ EVMSwapMain ~ method:", method);
     console.log("🚀 ~ EVMSwapMain ~ email:", email);
+    console.log("🚀 ~ EVMSwapMain ~ chatId:", chatId);
     console.log("🚀 ~ EVMSwapMain ~ chain:", chain);
     console.log("🚀 ~ EVMSwapMain ~ amount:", amount);
     console.log("🚀 ~ EVMSwapMain ~ chainId:", chainId);
@@ -164,26 +165,29 @@ async function EVMSwapMain(req, res) {
       txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
-    if (error?.method == "estimateGas") {
+    console.log("🚀 ~ EVMSwapMain ~ error:", error?.code);
+    if (
+      error?.method === "estimateGas" ||
+      error?.code == "INSUFFICIENT_FUNDS"
+    ) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "Insufficient balance!!",
+        message: "Insufficient balance + gas!!",
       });
     }
-    if (error?.code == "UNSUPPORTED_OPERATION") {
+    if (error?.code === "UNSUPPORTED_OPERATION") {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
         message:
-          "Somthing has been wrong make sure you entered correct details!!",
+          "Something has been wrong. Make sure you entered correct details!!",
       });
     }
     return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.BAD_REQUEST,
-      message: "Somthing has been wrong please try again later!!",
+      message: "Something has been wrong please try again later!!",
     });
   }
 }
