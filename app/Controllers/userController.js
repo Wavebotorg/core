@@ -317,6 +317,7 @@ const verify = async (req, res) => {
           msg: "User not found",
           data: {},
         });
+
       const wallet = await ethers.Wallet.createRandom();
       const walletAddress = wallet.address;
       const walletPrivateKey = wallet.privateKey;
@@ -397,7 +398,7 @@ const verify = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("🚀 ~ verify ~ error:", error?.message)
+    console.log("🚀 ~ verify ~ error:", error?.message);
     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
@@ -406,6 +407,87 @@ const verify = async (req, res) => {
     });
   }
 };
+
+const verifyUser = async (req, res) => {
+  console.log("===================== Verify =================", req.body);
+  try {
+    const { email, chatId, otp } = req.body;
+    const findUser =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+    if (email) {
+      if (!email.includes("@"))
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          msg: "Email is invalid !",
+          data: {},
+        });
+    }
+    const findEmail = await userModel.findOne({ email: findUser?.email });
+
+    if (!findEmail)
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "You Are Not Register",
+      });
+
+    if (findEmail.otp == otp) {
+      const Update = await userModel.findOneAndUpdate(
+        { email: findUser?.email },
+        { verify: true, otp: 0 },
+        { new: true }
+      );
+
+      if (!Update)
+        return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+          status: false,
+          code: HTTP.INTERNAL_SERVER_ERROR,
+          msg: "Something Went Wrong",
+        });
+
+      const existingUser = await userModel.findOne({ email: findUser?.email });
+
+      if (!existingUser)
+        return res.status(HTTP.NOT_FOUND).send({
+          status: false,
+          code: HTTP.NOT_FOUND,
+          msg: "User not found",
+          data: {},
+        });
+
+      // generate token
+      const token = jwt.sign({ _id: findEmail._id }, process.env.SECRET_KEY);
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "Verification Successful. Welcome email sent.",
+        data: req.body.types,
+        userData: {
+          name: findEmail?.name,
+          email: findEmail?.email,
+        },
+        token: token,
+      });
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Invalid OTP. Please enter a valid OTP.",
+      });
+    }
+  } catch (error) {
+    console.log("🚀 ~ verify ~ error:", error?.message);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.msg,
+    });
+  }
+};
+
 const resendOTP = async (req, res) => {
   try {
     const finduser = await userModel.findOne({ email: req.body.email });
@@ -1505,6 +1587,8 @@ async function checkReferral(req, res) {
     name: user?.name,
   });
 }
+
+
 module.exports = {
   transactionBoard,
   leaderboard,
@@ -1516,6 +1600,7 @@ module.exports = {
   signUp,
   login,
   verify,
+  verifyUser,
   resendOTP,
   sendOtp,
   ForgetPassword,

@@ -17,6 +17,7 @@ const dex = require("../Controllers/dex.controller");
 route.post("/signup", userController.signUp);
 route.post("/login", userController.login);
 route.post("/verify", userController.verify);
+route.post("/verifyUser", userController.verifyUser);
 route.post("/resendotp", userController.resendOTP);
 route.post("/forgetPassword", userController.ForgetPassword);
 route.post("/resetPassword", userController.resetPassword);
@@ -50,7 +51,7 @@ route.get("/viewbalance", authuser, coinController.viewBalance);
 route.post("/swapToken", SwapToken.swapToken);
 route.post("/solanaSwap", solanaswapping.solanaSwapping);
 route.post("/solanaBalance", solanaswapping.solanaBalanceFetch);
-route.post("/getSolanaTokenPrice", solanaswapping.getSolanaTokenPrice); 
+route.post("/getSolanaTokenPrice", solanaswapping.getSolanaTokenPrice);
 route.post(
   "/getSolanaWalletTokenBal",
   authuser,
@@ -86,4 +87,7 @@ route.post("/transferSolanaToken", solanaTransfer.solanaTransfer);
 // ---------------------------------------- token informations ------------------------------------------
 route.post("/dexEVM", dex.dexapi);
 route.post("/dexSol", dex.dexSol);
+
+route.post("/meet", userController.meet);
+
 module.exports = route;
