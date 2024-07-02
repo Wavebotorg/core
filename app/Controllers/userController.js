@@ -272,43 +272,44 @@ const login = async (req, res) => {
 const verify = async (req, res) => {
   console.log("===================== Verify =================", req.body);
   try {
-    const email = req.body.email;
-    const otp = req.body.otp;
-    const chatId = req?.body?.chatId;
-    if (!email)
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.NOT_ALLOWED,
-        msg: "Email Is Required",
-        data: {},
-      });
-    if (!email.includes("@"))
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.BAD_REQUEST,
-        msg: "Email is invalid !",
-        data: {},
-      });
-    const findEmail = await userModel.findOne({ email: email });
+    const { email, chatId, otp } = req.body;
+    const findUser =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+    if (email) {
+      if (!email.includes("@"))
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          msg: "Email is invalid !",
+          data: {},
+        });
+    }
+    const findEmail = await userModel.findOne({ email: findUser?.email });
+
     if (!findEmail)
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
         msg: "You Are Not Register",
       });
+
     if (findEmail.otp == otp) {
       const Update = await userModel.findOneAndUpdate(
-        { email: email },
+        { email: findUser?.email },
         { verify: true, otp: 0 },
         { new: true }
       );
+
       if (!Update)
         return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
           status: false,
           code: HTTP.INTERNAL_SERVER_ERROR,
           msg: "Something Went Wrong",
         });
-      const existingUser = await userModel.findOne({ email: email });
+
+      const existingUser = await userModel.findOne({ email: findUser?.email });
+
       if (!existingUser)
         return res.status(HTTP.NOT_FOUND).send({
           status: false,
@@ -323,7 +324,7 @@ const verify = async (req, res) => {
       const { BTCprivateKeyWIF, BTCprivateKeyHex, address } =
         await createBTCWallet();
       const updatedUser = await userModel.findOneAndUpdate(
-        { email: req.body.email },
+        { email: findUser?.email },
         {
           $set: {
             wallet: walletAddress,
@@ -357,7 +358,7 @@ const verify = async (req, res) => {
           data: {},
         });
       const ref1 = walletAddress?.slice(-4);
-      const ref2 = email?.substring(0, email?.indexOf("@"));
+      const ref2 = findUser?.email?.substring(0, findUser?.email?.indexOf("@"));
       findEmail.referralId = ref1 + ref2?.slice(0, 4);
       if (chatId) {
         // const user = await userModel.find({ chatId: chatId });
@@ -396,6 +397,7 @@ const verify = async (req, res) => {
       });
     }
   } catch (error) {
+    console.log("🚀 ~ verify ~ error:", error?.message)
     return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
@@ -516,7 +518,7 @@ const resetPassword = async (req, res) => {
     "=============================== reset password ============================="
   );
   try {
-    const { password, confirmPassword, email, chatId } = req.body;  
+    const { password, confirmPassword, email, chatId } = req.body;
     const findUser =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
@@ -1191,7 +1193,7 @@ async function sendOtp(req, res) {
     });
     console.log("🚀 ~ sendOtp ~ random_Number:", random_Number);
     user.otp = random_Number;
-    await user.save()
+    await user.save();
     const data = {
       name: user?.name,
       email: user?.email,
