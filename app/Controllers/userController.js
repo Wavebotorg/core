@@ -516,40 +516,46 @@ const resetPassword = async (req, res) => {
     "=============================== reset password ============================="
   );
   try {
-    const findUser = await userModel.findOne({ email: req.body.email });
-    if (req.body) {
-      if (findUser) {
-        const password = req.body.newPassword;
-        const confirmPassword = req.body.confirmPassword;
-        if (password === confirmPassword) {
-          const hashedPassword = await bcrypt.hash(password, 10);
-          await userModel.findOneAndUpdate(
-            { email: req.body.email },
-            { password: hashedPassword },
-            { new: true }
-          );
-          return res.status(HTTP.SUCCESS).send({
-            status: true,
-            code: HTTP.SUCCESS,
-            msg: "Your Password Is Reset",
-          });
-        } else {
-          return res.status(HTTP.SUCCESS).send({
-            status: false,
-            code: HTTP.BAD_REQUEST,
-            msg: "Password and confirmPassword Do Not Match",
-          });
-        }
+    const { password, confirmPassword, email, chatId } = req.body;  
+    const findUser =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+    if (!password && !confirmPassword) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "All fields are required!!",
+      });
+    }
+    if (findUser) {
+      if (password === confirmPassword) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await userModel.findOneAndUpdate(
+          { email: findUser?.email },
+          { password: hashedPassword },
+          { new: true }
+        );
+        return res.status(HTTP.SUCCESS).send({
+          status: true,
+          code: HTTP.SUCCESS,
+          msg: "Password reset successfully!!",
+        });
       } else {
-        return res.status(HTTP.NOT_FOUND).send({
+        return res.status(HTTP.SUCCESS).send({
           status: false,
-          code: HTTP.NOT_FOUND,
-          msg: "User not found with the provided email",
+          code: HTTP.BAD_REQUEST,
+          msg: "Password and confirmPassword Does Not Match",
         });
       }
+    } else {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.NOT_FOUND,
+        msg: "User not found with the provided email",
+      });
     }
   } catch (error) {
-    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+    return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
       msg: "Something Went Wrong",
@@ -1166,9 +1172,11 @@ async function logoutBotUser(req, res) {
 // -------------------------------- send otp ---------------------------------
 async function sendOtp(req, res) {
   try {
-    email = req?.user?.email || req?.body?.email;
-    console.log("🚀 ~ sendOtp ~ email:", email);
-    const user = userModel.findOne({ email });
+    const { chatId, email } = req.body;
+    const findUser =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+    const user = await userModel.findOne({ email: findUser?.email });
     if (!user) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
