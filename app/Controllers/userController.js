@@ -1191,6 +1191,7 @@ async function sendOtp(req, res) {
     });
     console.log("🚀 ~ sendOtp ~ random_Number:", random_Number);
     user.otp = random_Number;
+    await user.save()
     const data = {
       name: user?.name,
       email: user?.email,
