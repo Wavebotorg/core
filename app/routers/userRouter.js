@@ -88,6 +88,6 @@ route.post("/transferSolanaToken", solanaTransfer.solanaTransfer);
 route.post("/dexEVM", dex.dexapi);
 route.post("/dexSol", dex.dexSol);
 
-route.post("/meet", userController.meet);
+// route.post("/meet", userController.meet);
 
 module.exports = route;

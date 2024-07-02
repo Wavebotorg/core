@@ -1587,8 +1587,6 @@ async function checkReferral(req, res) {
     name: user?.name,
   });
 }
-
-
 module.exports = {
   transactionBoard,
   leaderboard,
