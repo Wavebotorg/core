@@ -318,49 +318,51 @@ const verify = async (req, res) => {
           data: {},
         });
 
-      const wallet = await ethers.Wallet.createRandom();
-      const walletAddress = wallet.address;
-      const walletPrivateKey = wallet.privateKey;
-      const { solanaAddress, solanaPrivateKey } = await generateWallet();
-      const { BTCprivateKeyWIF, BTCprivateKeyHex, address } =
-        await createBTCWallet();
-      const updatedUser = await userModel.findOneAndUpdate(
-        { email: findUser?.email },
-        {
-          $set: {
-            wallet: walletAddress,
-            hashedPrivateKey: walletPrivateKey,
-            solanaPK: solanaPrivateKey,
-            solanawallet: solanaAddress,
-            btcWallet: address,
-            btcPK: BTCprivateKeyHex,
-            chatingId: {
-              chatId: chatId ? chatId : null,
-              session: chatId ? true : null,
+      if (!existingUser?.referralId) {
+        const wallet = await ethers.Wallet.createRandom();
+        const walletAddress = wallet.address;
+        const walletPrivateKey = wallet.privateKey;
+        const { solanaAddress, solanaPrivateKey } = await generateWallet();
+        const { BTCprivateKeyWIF, BTCprivateKeyHex, address } =
+          await createBTCWallet();
+        const updatedUser = await userModel.findOneAndUpdate(
+          { email: findUser?.email },
+          {
+            $set: {
+              wallet: walletAddress,
+              hashedPrivateKey: walletPrivateKey,
+              solanaPK: solanaPrivateKey,
+              solanawallet: solanaAddress,
+              btcWallet: address,
+              btcPK: BTCprivateKeyHex,
+              chatingId: {
+                chatId: chatId ? chatId : null,
+                session: chatId ? true : null,
+              },
             },
           },
-        },
-        {
-          new: true,
-        }
-      );
-      const data = {
-        email: findEmail?.email,
-        username: findEmail?.name,
-        createdAt: findEmail?.createdAt,
-        templetpath: "./emailtemplets/welcomemailtemp.html",
-      };
-      welcomeSendMail(data);
-      if (!updatedUser)
-        return res.status(HTTP.SUCCESS).send({
-          status: false,
-          code: HTTP.INTERNAL_SERVER_ERROR,
-          msg: "Could not save wallet",
-          data: {},
-        });
-      const ref1 = walletAddress?.slice(-4);
-      const ref2 = findUser?.email?.substring(0, findUser?.email?.indexOf("@"));
-      findEmail.referralId = ref1 + ref2?.slice(0, 4);
+          {
+            new: true,
+          }
+        );
+        const data = {
+          email: findEmail?.email,
+          username: findEmail?.name,
+          createdAt: findEmail?.createdAt,
+          templetpath: "./emailtemplets/welcomemailtemp.html",
+        };
+        welcomeSendMail(data);
+        if (!updatedUser)
+          return res.status(HTTP.SUCCESS).send({
+            status: false,
+            code: HTTP.INTERNAL_SERVER_ERROR,
+            msg: "Could not save wallet",
+            data: {},
+          });
+          const ref1 = walletAddress?.slice(-4);
+          const ref2 = findUser?.email?.substring(0, findUser?.email?.indexOf("@"));
+          findEmail.referralId = ref1 + ref2?.slice(0, 4);
+      }
       if (chatId) {
         // const user = await userModel.find({ chatId: chatId });
         await userModel.updateMany(
