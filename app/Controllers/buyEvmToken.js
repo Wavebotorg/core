@@ -65,7 +65,7 @@ async function EVMBuyMain(req, res) {
       tokenOut,
       18,
       chainId,
-      amount,
+      Number(amount).toFixed(6),
       chain,
       email,
       chatId
