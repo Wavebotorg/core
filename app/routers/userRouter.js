@@ -12,6 +12,7 @@ const qrCode = require("../Controllers/QrCodeController");
 const transferEvm = require("../Controllers/transferToken.controller");
 const solanaTransfer = require("../Controllers/solanaTransfer.controller");
 const dex = require("../Controllers/dex.controller");
+const position = require("../Controllers/position.controller");
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -87,6 +88,9 @@ route.post("/transferSolanaToken", solanaTransfer.solanaTransfer);
 // ---------------------------------------- token informations ------------------------------------------
 route.post("/dexEVM", dex.dexapi);
 route.post("/dexSol", dex.dexSol);
+
+// ----------------------------------------- position apis --------------------------------------------
+route.post("/getPositions", position.positionsList);
 
 // route.post("/meet", userController.meet);
 

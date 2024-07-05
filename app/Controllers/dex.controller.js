@@ -51,7 +51,6 @@ async function dexapi(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    console.log("🚀 ~ dexapi ~ price:", price)
     const info = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${network}/${token}/info`,
       method: "get",
@@ -60,7 +59,6 @@ async function dexapi(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    console.log("🚀 ~ dexapi ~ info:", info)
     const address = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${network}/${token}`,
       method: "get",
@@ -69,7 +67,6 @@ async function dexapi(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    console.log("🚀 ~ dexapi ~ address:", address)
     const data = {
       name: address?.data?.data?.name,
       address: address?.data?.data?.address,

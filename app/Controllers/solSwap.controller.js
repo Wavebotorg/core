@@ -15,6 +15,7 @@ const TxnEvm = require("../Models/TXNevmSwap");
 const {
   transactionSenderAndConfirmationWaiter,
 } = require("../../utils/transactionSender");
+const positions = require("../Models/positions");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
 // const provider = new ethers
@@ -151,7 +152,14 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
           "🚀 ~ swapTokens ~ sendTransaction:",
           sendTransaction?.transaction?.signatures[0]
         );
-        return sendTransaction?.transaction?.signatures[0];
+        let txId = sendTransaction?.transaction?.signatures[0];
+        if (sendTransaction?.meta?.err === null) {
+          console.log("Transaction was successful");
+          return txId;
+        } else {
+          console.log("Transaction failed:", response?.meta?.err);
+          return null;
+        }
       } catch (error) {
         console.log("🚀 ~ swapTokens ~ error:", error);
       }
@@ -226,6 +234,44 @@ async function solanaSwapping(req, res) {
         method: method,
         dollar: Number(tokenInDollar?.toFixed(5)),
       });
+      if (txId) {
+        let positionToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: new RegExp(`^${output}$`, "i"),
+          network: 19999,
+        });
+        const outTokenCurrentPrice = await axios({
+          url: `https://public-api.dextools.io/standard/v2/token/solana/${output}/price`,
+          method: "get",
+          headers: {
+            accept: "application/json",
+            "x-api-key": process.env.DEXTOOLAPIKEY,
+          },
+        });
+        let positionQty =
+          tokenInDollar / outTokenCurrentPrice?.data?.data?.price;
+        if (positionToken?.tokenAddress) {
+          let price = positionToken.qty * positionToken.currentPrice;
+          let price2 = positionQty * outTokenCurrentPrice?.data?.data?.price;
+          let newTotal = price + price2;
+          console.log("🚀 ~ solanaSwapping ~ newTotal:", newTotal);
+          let totalQty = positionToken.qty + positionQty;
+          console.log("🚀 ~ solanaSwapping ~ totalQty:", totalQty);
+          console.log("🚀 ~ solanaSwapping ~ new price:", newTotal / totalQty);
+          positionToken.currentPrice = newTotal / totalQty;
+          positionToken.qty += positionQty;
+          await positionToken.save();
+        } else {
+          await positions.create({
+            userId: walletDetails?.id,
+            tokenAddress: output,
+            qty: positionQty,
+            currentPrice: outTokenCurrentPrice?.data?.data?.price,
+            network: 19999,
+          });
+        }
+      }
+
       return res.status(200).send({
         status: true,
         message: "Transaction Successful!",
@@ -268,7 +314,7 @@ async function solanaSwapping(req, res) {
       }
       // res.send(inputInfo)
       const amountSOL = await ethers.utils.parseUnits(
-        amount?.toString(),
+        Number(amount)?.toFixed(4)?.toString(),
         inputDesimals
       );
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
@@ -301,6 +347,59 @@ async function solanaSwapping(req, res) {
         method: method,
         dollar: Number(tokenInDollar2?.toFixed(5)),
       });
+      if (txId) {
+        let positionInToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: input,
+          network: 19999,
+        });
+        if (positionInToken?.tokenAddress) {
+          if (positionInToken?.qty <= amount) {
+            await positions.findOneAndDelete({
+              userId: walletDetails?.id,
+              tokenAddress: input,
+              network: 19999,
+            });
+          } else {
+            positionInToken.qty -= Number(amount);
+            await positionInToken.save();
+          }
+        }
+        let positionOutToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: output,
+          network: 19999,
+        });
+        const outTokenCurrentPrice = await axios({
+          url: `https://public-api.dextools.io/standard/v2/token/solana/${output}/price`,
+          method: "get",
+          headers: {
+            accept: "application/json",
+            "x-api-key": process.env.DEXTOOLAPIKEY,
+          },
+        });
+        let positionQty =
+          tokenInDollar2 / outTokenCurrentPrice?.data?.data?.price;
+        if (positionOutToken?.tokenAddress) {
+          let price = positionOutToken.qty * positionOutToken.currentPrice;
+          let price2 = positionQty * outTokenCurrentPrice?.data?.data?.price;
+          let newPrice = price + price2;
+          let totalQty = positionOutToken.qty + positionQty;
+          positionOutToken.currentPrice = newPrice / totalQty;
+          positionOutToken.qty += positionQty;
+          await positionOutToken.save();
+        } else {
+          if (output != "So11111111111111111111111111111111111111112") {
+            await positions.create({
+              userId: walletDetails?.id,
+              tokenAddress: output,
+              qty: positionQty,
+              currentPrice: outTokenCurrentPrice?.data?.data?.price,
+              network: 19999,
+            });
+          }
+        }
+      }
       return res.status(200).send({
         status: true,
         message: "Transaction Successful!",

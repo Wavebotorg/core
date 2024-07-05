@@ -359,9 +359,12 @@ const verify = async (req, res) => {
             msg: "Could not save wallet",
             data: {},
           });
-          const ref1 = walletAddress?.slice(-4);
-          const ref2 = findUser?.email?.substring(0, findUser?.email?.indexOf("@"));
-          findEmail.referralId = ref1 + ref2?.slice(0, 4);
+        const ref1 = walletAddress?.slice(-4);
+        const ref2 = findUser?.email?.substring(
+          0,
+          findUser?.email?.indexOf("@")
+        );
+        findEmail.referralId = ref1 + ref2?.slice(0, 4);
       }
       if (chatId) {
         // const user = await userModel.find({ chatId: chatId });
@@ -912,7 +915,6 @@ const fetchBalance = async (req, res) => {
       const userfind =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
-      console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind);
 
       if (!Moralis.Core.isStarted) {
         await Moralis.start({
@@ -937,8 +939,6 @@ const fetchBalance = async (req, res) => {
       const { email, chainId } = req.body;
       console.log("🚀 ~ fetchBalance ~ email:", email);
       const userfind = await userModel.findOne({ email: email });
-
-      console.log("🚀 ~ appGetTokenPrices ~ userfind:", userfind.wallet);
 
       if (!Moralis.Core.isStarted) {
         await Moralis.start({

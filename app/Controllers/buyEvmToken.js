@@ -11,6 +11,7 @@ const { ethers } = require("ethers");
 const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
 const { getEthBalance } = require("../kibaSwap/getBalanceOfNativeToken");
+const positions = require("../Models/positions");
 
 async function EVMBuyMain(req, res) {
   try {
@@ -77,8 +78,8 @@ async function EVMBuyMain(req, res) {
         message: "Something has been wrong",
       });
     }
-    const encodedSwapData = swapData?.data;
-    const routerContract = swapData?.routerAddress;
+    const encodedSwapData = swapData?.encodeResponse?.data;
+    const routerContract = swapData?.encodeResponse?.routerAddress;
     console.log("🚀 ~ EVMSwapMain ~ routerContract: get successful!!");
 
     const signer = await getSigner(
@@ -102,7 +103,7 @@ async function EVMBuyMain(req, res) {
       const transactionApprove = await getTokenApproval(
         tokenIn,
         routerContract,
-        swapData.amountIn,
+        swapData?.encodeResponse?.amountIn,
         signerAddress,
         signer
       );
@@ -158,7 +159,42 @@ async function EVMBuyMain(req, res) {
       method: method,
       dollar: Number(amountInDollar.toFixed(5)),
     });
-    return res.status(HTTP.SUCCESS).send({
+    if (executeSwapTxReceipt?.transactionHash) {
+      const outTokenCurrentPrice = await axios({
+        url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenOut}/price`,
+        method: "get",
+        headers: {
+          accept: "application/json",
+          "x-api-key": process.env.DEXTOOLAPIKEY,
+        },
+      });
+      const positionToken = await positions.findOne({
+        userId: walletDetails?.id,
+        tokenAddress: new RegExp(`^${tokenOut}$`, "i"),
+        network: chain,
+      });
+      let qtyOfToken =
+        Number(swapData?.quatation?.amountOutUsd) /
+        outTokenCurrentPrice?.data?.data?.price;
+      if (positionToken) {
+        let price = positionToken.qty * positionToken.currentPrice;
+        let price2 = qtyOfToken * outTokenCurrentPrice?.data?.data?.price;
+        let newPrice = price + price2;
+        let totalQty = positionToken.qty + qtyOfToken;
+        positionToken.currentPrice = newPrice / totalQty;
+        positionToken.qty += qtyOfToken;
+        await positionToken.save();
+      } else {
+        await positions.create({
+          userId: walletDetails?.id,
+          tokenAddress: tokenOut,
+          qty: qtyOfToken,
+          currentPrice: outTokenCurrentPrice?.data?.data?.price,
+          network: chain,
+        });
+      }
+    }
+    res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "Transaction successful!!",

@@ -158,6 +158,21 @@ async function sendERC20Token(req, res) {
       tx: receipt?.transactionHash,
       dollar: Number(amountInDollar.toFixed(5)),
     });
+    if (receipt?.transactionHash) {
+      const positionToken = await positions.findOne({
+        userId: walletDetails?.id,
+        tokenAddress: new RegExp(`^${token}$`, "i"),
+        network: Number(chain),
+      });
+      console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+      if (positionToken?.tokenAddress) {
+        console.log(
+          "----------------------------execute sell--------------------------"
+        );
+        positionToken.qty -= Number(amount);
+        await positionToken.save();
+      }
+    }
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,

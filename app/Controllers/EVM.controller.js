@@ -10,6 +10,7 @@ const { getProvider } = require("../kibaSwap/provider");
 const { ethers } = require("ethers");
 const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
+const positions = require("../Models/positions");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -73,8 +74,8 @@ async function EVMSwapMain(req, res) {
         message: "somthing has been wrong",
       });
     }
-    const encodedSwapData = swapData?.data;
-    const routerContract = swapData?.routerAddress;
+    const encodedSwapData = swapData?.encodeResponse?.data;
+    const routerContract = swapData?.encodeResponse?.routerAddress;
     // console.log("🚀 ~ EVMSwapMain ~ routerContract:", routerContract);
     console.log("🚀 ~ EVMSwapMain ~ routerContract: get successfull!!");
 
@@ -101,7 +102,7 @@ async function EVMSwapMain(req, res) {
     const transactionApprove = await getTokenApproval(
       tokenIn,
       routerContract,
-      swapData.amountIn,
+      swapData?.encodeResponse?.amountIn,
       signerAddress,
       signer
     );
@@ -157,6 +158,108 @@ async function EVMSwapMain(req, res) {
       method: method,
       dollar: Number(amountInDollar.toFixed(5)),
     });
+    if (executeSwapTxReceipt?.transactionHash) {
+      if (method == "sell") {
+        const positionToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
+          network: Number(chain),
+        });
+        console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+        if (positionToken?.tokenAddress) {
+          console.log(
+            "----------------------------execute sell--------------------------"
+          );
+          if (positionToken?.qty <= amount) {
+            await positions.findOneAndDelete({
+              userId: walletDetails?.id,
+              tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
+              network: Number(chain),
+            });
+          } else {
+            positionToken.qty -= Number(amount);
+            await positionToken.save();
+          }
+        }
+      } else if (method == "swap") {
+        console.log(
+          "----------------------------execute swap call--------------------------"
+        );
+        const positionInToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
+          network: chain,
+        });
+        console.log("🚀 ~ EVMSwapMain ~ positionInToken:", positionInToken);
+        if (positionInToken?.tokenAddress) {
+          console.log(
+            "----------------------------execute swap In --------------------------"
+          );
+          if (positionInToken?.qty <= amount) {
+            await positions.findOneAndDelete({
+              userId: walletDetails?.id,
+              tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
+              network: Number(chain),
+            });
+          } else {
+            positionInToken.qty -= Number(amount);
+            await positionInToken.save();
+          }
+        }
+        const positionOutToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: new RegExp(`^${tokenOut}$`, "i"),
+          network: chain,
+        });
+        console.log("🚀 ~ EVMSwapMain ~ positionOutToken:", positionOutToken);
+        const outTokenCurrentPrice = await axios({
+          url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenOut}/price`,
+          method: "get",
+          headers: {
+            accept: "application/json",
+            "x-api-key": process.env.DEXTOOLAPIKEY,
+          },
+        });
+        console.log(
+          "🚀 ~ EVMSwapMain ~ outTokenCurrentPrice:",
+          outTokenCurrentPrice?.data?.data?.price
+        );
+        let qtyOfToken =
+          Number(swapData?.quatation?.amountOutUsd) /
+          outTokenCurrentPrice?.data?.data?.price;
+        if (positionOutToken?.tokenAddress) {
+          console.log(
+            "----------------------------execute swap out--------------------------"
+          );
+          let price = positionOutToken.qty * positionOutToken.currentPrice;
+          console.log("🚀 ~ EVMSwapMain ~ price:", price);
+          let price2 = qtyOfToken * outTokenCurrentPrice?.data?.data?.price;
+          console.log("🚀 ~ EVMSwapMain ~ price2:", price2);
+          let totalPrice = price + price2;
+          console.log("🚀 ~ EVMSwapMain ~ totalPrice:", totalPrice);
+          let totalQty = positionOutToken.qty + qtyOfToken;
+          console.log("🚀 ~ EVMSwapMain ~ totalQty:", totalQty);
+          console.log(
+            "🚀 ~ EVMSwapMain ~ final price :",
+            totalPrice / totalQty
+          );
+          positionOutToken.currentPrice = totalPrice / totalQty;
+          positionOutToken.qty += Number(qtyOfToken);
+          await positionOutToken.save();
+        } else {
+          console.log(
+            "---------------------------- execute swap create --------------------------"
+          );
+          await positions.create({
+            userId: walletDetails?.id,
+            tokenAddress: tokenOut,
+            qty: Number(qtyOfToken),
+            currentPrice: outTokenCurrentPrice?.data?.data?.price,
+            network: chain,
+          });
+        }
+      }
+    }
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
@@ -165,7 +268,7 @@ async function EVMSwapMain(req, res) {
       txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error?.code);
+    console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
     if (
       error?.method === "estimateGas" ||
       error?.code == "INSUFFICIENT_FUNDS"

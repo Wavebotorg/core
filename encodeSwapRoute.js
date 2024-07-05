@@ -59,9 +59,12 @@ async function postSwapRouteV1(
     // console.log(`[V1] POST Response:`, encodeResponse?.data?.data);
     console.log(`encoded data get successfullu!!`);
 
-    return encodeResponse?.data?.data;
+    return {
+      encodeResponse: encodeResponse?.data?.data,
+      quatation: swapRouteData?.routeSummary,
+    };
   } catch (error) {
-    console.log(error);
+    console.log("🚀 ~ error:", error?.message);
   }
 }
 

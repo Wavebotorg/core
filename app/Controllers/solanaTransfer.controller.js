@@ -135,7 +135,7 @@ async function solanaTransfer(req, res) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
         code: HTTP.BAD_REQUEST,
-        message: "Transaction failed meet, please try again later!!",
+        message: "🔴 Transaction failed, please try again later!!",
       });
     }
     await transfer.create({
@@ -147,6 +147,22 @@ async function solanaTransfer(req, res) {
       tx: signature,
       dollar: Number(tokenInDollar.toFixed(5)),
     });
+
+    if (receipt?.transactionHash) {
+      const positionToken = await positions.findOne({
+        userId: walletDetails?.id,
+        tokenAddress: new RegExp(`^${token}$`, "i"),
+        network: 19999,
+      });
+      console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+      if (positionToken?.tokenAddress) {
+        console.log(
+          "---------------------------- execute sell --------------------------"
+        );
+        positionToken.qty -= Number(amount);
+        await positionToken.save();
+      }
+    }
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
