@@ -11,6 +11,7 @@ const { ethers } = require("ethers");
 const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
 const positions = require("../Models/positions");
+const { getTokenBalance } = require("../kibaSwap/getBalance");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -47,6 +48,22 @@ async function EVMSwapMain(req, res) {
     const walletDetails =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
+
+    const tokenBalanceUserBuy = await getTokenBalance(
+      tokenOut,
+      walletDetails?.wallet,
+      provider
+    );
+    console.log("🚀 ~ EVMSwapMain ~ tokenBalanceUserBuy:", tokenBalanceUserBuy);
+    const tokenBalanceUserSell = await getTokenBalance(
+      tokenIn,
+      walletDetails?.wallet,
+      provider
+    );
+    console.log(
+      "🚀 ~ EVMSwapMain ~ tokenBalanceUserSell:",
+      tokenBalanceUserSell
+    );
     // Create a wallet instance
     const wallet = new ethers.Wallet(walletDetails?.hashedPrivateKey, provider);
 
@@ -170,15 +187,12 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute sell--------------------------"
           );
-          if (positionToken?.qty <= amount) {
+          if (tokenBalanceUserBuy <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
               network: Number(chain),
             });
-          } else {
-            positionToken.qty -= Number(amount);
-            await positionToken.save();
           }
         }
       } else if (method == "swap") {
@@ -195,15 +209,12 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute swap In --------------------------"
           );
-          if (positionInToken?.qty <= amount) {
+          if (tokenBalanceUserSell <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
               network: Number(chain),
             });
-          } else {
-            positionInToken.qty -= Number(amount);
-            await positionInToken.save();
           }
         }
         const positionOutToken = await positions.findOne({
@@ -231,20 +242,12 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute swap out--------------------------"
           );
-          let price = positionOutToken.qty * positionOutToken.currentPrice;
-          console.log("🚀 ~ EVMSwapMain ~ price:", price);
+          let price =
+            Number(tokenBalanceUserBuy) * positionOutToken.currentPrice;
           let price2 = qtyOfToken * outTokenCurrentPrice?.data?.data?.price;
-          console.log("🚀 ~ EVMSwapMain ~ price2:", price2);
           let totalPrice = price + price2;
-          console.log("🚀 ~ EVMSwapMain ~ totalPrice:", totalPrice);
-          let totalQty = positionOutToken.qty + qtyOfToken;
-          console.log("🚀 ~ EVMSwapMain ~ totalQty:", totalQty);
-          console.log(
-            "🚀 ~ EVMSwapMain ~ final price :",
-            totalPrice / totalQty
-          );
-          positionOutToken.currentPrice = totalPrice / totalQty;
-          positionOutToken.qty += Number(qtyOfToken);
+          let totalQty = Number(tokenBalanceUserBuy) + Number(qtyOfToken);
+          positionOutToken.currentPrice = Number(totalPrice) / totalQty;
           await positionOutToken.save();
         } else {
           console.log(
@@ -253,7 +256,6 @@ async function EVMSwapMain(req, res) {
           await positions.create({
             userId: walletDetails?.id,
             tokenAddress: tokenOut,
-            qty: Number(qtyOfToken),
             currentPrice: outTokenCurrentPrice?.data?.data?.price,
             network: chain,
           });

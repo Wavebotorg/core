@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const mongooseFieldEncryption =
   require("mongoose-field-encryption").fieldEncryption;
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema(
   {
@@ -89,9 +90,9 @@ const userSchema = new mongoose.Schema(
 
 userSchema.plugin(mongooseFieldEncryption, {
   fields: ["hashedPrivateKey", "solanaPK", "btcPK"],
-  secret: "code",
+  secret: process.env.PRIVATESECRET,
   saltGenerator: function (secret) {
-    return "1234567890123456";
+    return crypto.randomBytes(16).toString("hex");
   },
 });
 const userModel = mongoose.model("user", userSchema);

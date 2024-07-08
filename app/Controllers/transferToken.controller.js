@@ -4,6 +4,8 @@ const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
 const { default: Moralis } = require("moralis");
 const { chainUrl } = require("../kibaSwap/constant");
+const { findOneAndDelete } = require("../Models/userModel");
+const positions = require("../Models/positions");
 
 async function sendERC20Token(req, res) {
   try {
@@ -87,6 +89,7 @@ async function sendERC20Token(req, res) {
     const walletDetails =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
+
     if (!walletDetails) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -102,6 +105,16 @@ async function sendERC20Token(req, res) {
     // Create a wallet instance
     const wallet = new ethers.Wallet(walletDetails?.hashedPrivateKey, provider);
 
+    //  get token balance
+    const transferTokenokenBalance = await getTokenBalance(
+      token,
+      walletDetails?.wallet,
+      provider
+    );
+    console.log(
+      "🚀 ~ EVMSwapMain ~ tokenBalanceUserBuy:",
+      transferTokenokenBalance
+    );
     // Load the token contract
     const abi = [
       "function transfer(address to, uint256 value) external returns (bool)",
@@ -167,10 +180,11 @@ async function sendERC20Token(req, res) {
       console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
       if (positionToken?.tokenAddress) {
         console.log(
-          "----------------------------execute sell--------------------------"
+          "----------------------------execute transfer--------------------------"
         );
-        positionToken.qty -= Number(amount);
-        await positionToken.save();
+        if (transferTokenokenBalance <= amount) {
+          await positions.findOneAndDelete({ _id: positionToken?._id });
+        }
       }
     }
     return res.status(HTTP.SUCCESS).send({

@@ -9,9 +9,6 @@ const positionSchema = new mongoose.Schema(
     tokenAddress: {
       type: String,
     },
-    qty: {
-      type: Number,
-    },
     currentPrice: {
       type: Number,
     },

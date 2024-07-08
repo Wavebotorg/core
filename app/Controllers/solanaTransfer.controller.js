@@ -5,6 +5,7 @@ const HTTP = require("../../constants/responseCode.constant");
 
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
+const positions = require("../Models/positions");
 const { PublicKey, Keypair, Connection, LAMPORTS_PER_SOL } = web3;
 
 async function solanaTransfer(req, res) {
@@ -53,6 +54,13 @@ async function solanaTransfer(req, res) {
     const walletDetails =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
+
+    //  get token balance
+    const tokenBalance = await getSoalanaTokenBalance(
+      walletDetails?.solanawallet,
+      token
+    );
+    console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", tokenBalance);
 
     const numbersArray = walletDetails.solanaPK.split(",").map(Number);
     const PK = Uint8Array.from(numbersArray);
@@ -159,8 +167,9 @@ async function solanaTransfer(req, res) {
         console.log(
           "---------------------------- execute sell --------------------------"
         );
-        positionToken.qty -= Number(amount);
-        await positionToken.save();
+        if (tokenBalance <= amount) {
+          await positions.findOneAndDelete({ _id: positionToken?._id });
+        }
       }
     }
     return res.status(HTTP.SUCCESS).send({

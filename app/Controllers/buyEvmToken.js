@@ -12,6 +12,7 @@ const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
 const { getEthBalance } = require("../kibaSwap/getBalanceOfNativeToken");
 const positions = require("../Models/positions");
+const { getTokenBalance } = require("../kibaSwap/getBalance");
 
 async function EVMBuyMain(req, res) {
   try {
@@ -41,6 +42,12 @@ async function EVMBuyMain(req, res) {
     const walletDetails =
       (chatId && (await getWalletInfo(chatId))) ||
       (email && (await getWalletInfoByEmail(email)));
+    const tokenBalanceUserBuy = await getTokenBalance(
+      tokenOut,
+      walletDetails?.wallet,
+      provider
+    );
+    console.log("🚀 ~ EVMBuyMain ~ tokenBalanceUserBuy:", tokenBalanceUserBuy);
     let amountInDollar;
     if (chain == 81457) {
       const data = await getEthBalance(walletDetails?.wallet);
@@ -176,19 +183,22 @@ async function EVMBuyMain(req, res) {
       let qtyOfToken =
         Number(swapData?.quatation?.amountOutUsd) /
         outTokenCurrentPrice?.data?.data?.price;
-      if (positionToken) {
-        let price = positionToken.qty * positionToken.currentPrice;
+      console.log("🚀 ~ EVMBuyMain ~ qtyOfToken:", qtyOfToken);
+      if (positionToken?.tokenAddress) {
+        let price = Number(tokenBalanceUserBuy) * positionToken.currentPrice;
+        console.log("🚀 ~ EVMBuyMain ~ price:", price);
         let price2 = qtyOfToken * outTokenCurrentPrice?.data?.data?.price;
+        console.log("🚀 ~ EVMBuyMain ~ price2:", price2);
         let newPrice = price + price2;
-        let totalQty = positionToken.qty + qtyOfToken;
-        positionToken.currentPrice = newPrice / totalQty;
-        positionToken.qty += qtyOfToken;
+        console.log("🚀 ~ EVMBuyMain ~ newPrice:", newPrice);
+        let totalQty = Number(tokenBalanceUserBuy) + Number(qtyOfToken);
+        console.log("🚀 ~ EVMBuyMain ~ totalQty:", totalQty);
+        positionToken.currentPrice = Number(newPrice) / totalQty;
         await positionToken.save();
       } else {
         await positions.create({
           userId: walletDetails?.id,
           tokenAddress: tokenOut,
-          qty: qtyOfToken,
           currentPrice: outTokenCurrentPrice?.data?.data?.price,
           network: chain,
         });
@@ -202,7 +212,7 @@ async function EVMBuyMain(req, res) {
       txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });
   } catch (error) {
-    console.log("🚀 ~ EVMSwapMain ~ error:", error?.code);
+    console.log("🚀 ~ EVMSwapMain ~ error:", error?.message);
     if (
       error?.method === "estimateGas" ||
       error?.code == "INSUFFICIENT_FUNDS"

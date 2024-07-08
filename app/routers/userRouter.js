@@ -90,7 +90,8 @@ route.post("/dexEVM", dex.dexapi);
 route.post("/dexSol", dex.dexSol);
 
 // ----------------------------------------- position apis --------------------------------------------
-route.post("/getPositions", position.positionsList);
+route.post("/getPositions", position.positionsListEvm);
+route.post("/getSolanaPositions",position.positionsListForSolana)
 
 // route.post("/meet", userController.meet);
 

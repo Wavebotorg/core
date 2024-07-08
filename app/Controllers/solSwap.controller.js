@@ -16,6 +16,7 @@ const {
   transactionSenderAndConfirmationWaiter,
 } = require("../../utils/transactionSender");
 const positions = require("../Models/positions");
+const { getSoalanaTokenBalance } = require("../kibaSwap/getSolanabalance");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
 // const provider = new ethers
@@ -157,11 +158,11 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
           console.log("Transaction was successful");
           return txId;
         } else {
-          console.log("Transaction failed:", response?.meta?.err);
+          console.log("Transaction failed:", sendTransaction?.meta?.err);
           return null;
         }
       } catch (error) {
-        console.log("🚀 ~ swapTokens ~ error:", error);
+        console.log("🚀 ~ swapTokens ~ error:", error?.message);
       }
     }
   } catch (error) {
@@ -197,7 +198,13 @@ async function solanaSwapping(req, res) {
       const walletDetails =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
-      // res.send(inputInfo)
+
+      const outTokenBalance = await getSoalanaTokenBalance(
+        walletDetails?.solanawallet,
+        output
+      );
+      console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", outTokenBalance);
+
       const amountSOL = await ethers.utils.parseUnits(
         amount?.toFixed(9).toString(),
         9
@@ -251,21 +258,19 @@ async function solanaSwapping(req, res) {
         let positionQty =
           tokenInDollar / outTokenCurrentPrice?.data?.data?.price;
         if (positionToken?.tokenAddress) {
-          let price = positionToken.qty * positionToken.currentPrice;
+          let price = outTokenBalance * positionToken.currentPrice;
           let price2 = positionQty * outTokenCurrentPrice?.data?.data?.price;
           let newTotal = price + price2;
           console.log("🚀 ~ solanaSwapping ~ newTotal:", newTotal);
-          let totalQty = positionToken.qty + positionQty;
+          let totalQty = outTokenBalance + positionQty;
           console.log("🚀 ~ solanaSwapping ~ totalQty:", totalQty);
           console.log("🚀 ~ solanaSwapping ~ new price:", newTotal / totalQty);
           positionToken.currentPrice = newTotal / totalQty;
-          positionToken.qty += positionQty;
           await positionToken.save();
         } else {
           await positions.create({
             userId: walletDetails?.id,
             tokenAddress: output,
-            qty: positionQty,
             currentPrice: outTokenCurrentPrice?.data?.data?.price,
             network: 19999,
           });
@@ -303,6 +308,15 @@ async function solanaSwapping(req, res) {
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
       console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails);
+
+      const inTokenBalance =
+        input != "So11111111111111111111111111111111111111112" &&
+        (await getSoalanaTokenBalance(walletDetails?.solanawallet, input));
+      console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", inTokenBalance);
+      const outTokenBalance =
+        output != "So11111111111111111111111111111111111111112" &&
+        (await getSoalanaTokenBalance(walletDetails?.solanawallet, output));
+      console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", outTokenBalance);
       const tokenMint = new PublicKey(input);
       const tokenAccountInfo = await connection.getAccountInfo(tokenMint);
       const inputDesimals = tokenAccountInfo?.data?.slice(44, 45)[0];
@@ -354,15 +368,10 @@ async function solanaSwapping(req, res) {
           network: 19999,
         });
         if (positionInToken?.tokenAddress) {
-          if (positionInToken?.qty <= amount) {
+          if (inTokenBalance <= amount) {
             await positions.findOneAndDelete({
-              userId: walletDetails?.id,
-              tokenAddress: input,
-              network: 19999,
+              _id: positionInToken?._id,
             });
-          } else {
-            positionInToken.qty -= Number(amount);
-            await positionInToken.save();
           }
         }
         let positionOutToken = await positions.findOne({
@@ -381,19 +390,17 @@ async function solanaSwapping(req, res) {
         let positionQty =
           tokenInDollar2 / outTokenCurrentPrice?.data?.data?.price;
         if (positionOutToken?.tokenAddress) {
-          let price = positionOutToken.qty * positionOutToken.currentPrice;
+          let price = outTokenBalance * positionOutToken.currentPrice;
           let price2 = positionQty * outTokenCurrentPrice?.data?.data?.price;
           let newPrice = price + price2;
-          let totalQty = positionOutToken.qty + positionQty;
+          let totalQty = outTokenBalance + positionQty;
           positionOutToken.currentPrice = newPrice / totalQty;
-          positionOutToken.qty += positionQty;
           await positionOutToken.save();
         } else {
           if (output != "So11111111111111111111111111111111111111112") {
             await positions.create({
               userId: walletDetails?.id,
               tokenAddress: output,
-              qty: positionQty,
               currentPrice: outTokenCurrentPrice?.data?.data?.price,
               network: 19999,
             });
