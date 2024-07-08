@@ -92,7 +92,7 @@ userSchema.plugin(mongooseFieldEncryption, {
   fields: ["hashedPrivateKey", "solanaPK", "btcPK"],
   secret: process.env.PRIVATESECRET,
   saltGenerator: function (secret) {
-    return crypto.randomBytes(16).toString("hex");
+    return "1234567890123456"
   },
 });
 const userModel = mongoose.model("user", userSchema);
