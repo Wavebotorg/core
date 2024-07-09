@@ -3,9 +3,30 @@ const HTTP = require("../../constants/responseCode.constant");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
+const { ChainNameById } = require("../kibaSwap/constant");
 
+//  conver a number in human readable formate
+function humanReadableFormat(number) {
+  const units = ["", "Thousand", "Million", "Billion", "Trillion"];
+  let unitIndex = 0;
+
+  while (Math.abs(number) >= 1000 && unitIndex < units.length - 1) {
+    number /= 1000;
+    unitIndex++;
+  }
+
+  return `${number.toFixed(2)}$ ${units[unitIndex]}`;
+}
+
+//  add comas to the number
+function addCommas(number) {
+  const numberString = Number(number)?.toFixed()?.toString();
+
+  const formattedString = numberString.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  return formattedString;
+}
 // position for EVM
-
 async function positionsListEvm(req, res) {
   try {
     const { chatId, chainId, email } = req.body;
@@ -54,10 +75,9 @@ async function positionsListEvm(req, res) {
     // step 1
     const map = new Map();
     balancesOfEvm?.forEach((item) => map.set(item?.token_address, item));
-    console.log("🚀 ~ positionsList ~ map:", map);
     const nativeToken = map.get("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
     // step 2
-    positionData?.forEach((item) => {
+    positionData?.forEach(async (item) => {
       const item2 = map.get(item.tokenAddress?.toLowerCase());
       if (item2) {
         const change = item2?.usd_price - item?.currentPrice;
@@ -68,7 +88,7 @@ async function positionsListEvm(req, res) {
           value_in_usd: item2?.usd_value,
           price_at_invested: item?.currentPrice,
           symbol: item2?.symbol,
-          percentage_of_growth: percentageChange.toFixed(5),
+          percentage_of_growth: percentageChange.toFixed(3),
           currentPrice: item2?.usd_price,
           usd_price_24hr_percent_change: item2?.usd_price_24hr_percent_change,
           usd_price_24hr_usd_change: item2?.usd_price_24hr_usd_change,
@@ -160,6 +180,15 @@ async function positionsListForSolana(req, res) {
               "x-api-key": process.env.DEXTOOLAPIKEY,
             },
           });
+          const info = await axios({
+            url: `https://public-api.dextools.io/standard/v2/token/solana/${item?.tokenAddress}/info`,
+            method: "get",
+            headers: {
+              accept: "application/json",
+              "x-api-key": process.env.DEXTOOLAPIKEY,
+            },
+          });
+          const market_cap = await addCommas(info?.data?.data?.mcap);
           const tokenBalance = map.get(item?.tokenAddress);
           const change =
             tokenPriceResponse?.data?.data?.price - item?.currentPrice;
@@ -167,9 +196,11 @@ async function positionsListForSolana(req, res) {
           return {
             address: item?.tokenAddress,
             price_at_invested: item?.currentPrice,
-            percentage: `${percentageChange?.toFixed()}%`,
+            percentage: `${percentageChange?.toFixed(3)}%`,
             ...tokenPriceResponse?.data?.data,
             ...tokenBalance,
+            ...info?.data?.data,
+            market_cap,
           };
         } catch (error) {
           console.error(

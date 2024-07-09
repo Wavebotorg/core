@@ -41,7 +41,7 @@ async function EVMSwapMain(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    let amountInDollar = price?.data?.data?.price * amount;
+    let amountInDollar = price?.data?.data?.price * amount;``
     console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
     const provider = getProvider(chain, chainId);
     // find wallet details
@@ -187,7 +187,7 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute sell--------------------------"
           );
-          if (tokenBalanceUserBuy <= amount) {
+          if (tokenBalanceUserSell <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),

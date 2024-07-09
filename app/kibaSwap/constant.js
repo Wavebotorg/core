@@ -86,6 +86,7 @@ const ChainName = {
   BTTC: `bittorrent`,
   SCROLL: `scroll`,
 };
+
 const desCode = {
   ethereum: `0x1`,
   bsc: `0x38`,
@@ -122,7 +123,23 @@ const ChainId = {
   ZKEVM: 1101,
   SCROLL: 534352,
 };
-
+const ChainNameById = {
+  1: `ether`,
+  56: `bsc`,
+  42161: `arbitrum`,
+  137: `polygon`,
+  10: `optimism`,
+  43114: `avalanche`,
+  8453: `base`,
+  25: `cronos`,
+  324: `zksync`,
+  250: `fantom`,
+  59144: `linea`,
+  1101: `polygon-zkevm`,
+  1313161554: `aurora`,
+  199: `bittorrent`,
+  534352: `scroll`,
+};
 const tokenIn = {
   address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
   chainId: ChainId.MATIC.toString(),
@@ -147,4 +164,5 @@ module.exports = {
   networkUrl,
   chainUrl,
   desCode,
+  ChainNameById
 };
