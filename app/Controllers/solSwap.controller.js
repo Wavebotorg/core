@@ -77,7 +77,7 @@ async function getWalletInfoDes(tokenAddress, from) {
 
 // =---------------------------------------------------------------get quatation function ----------------------------------------------------------
 async function getSwapQuote(inputMint, outputMint, amount) {
-  const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=50`; // Change 0.001 to a valid integer value
+  const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=200`; // Change 0.001 to a valid integer value
 
   try {
     const response = await fetch(url);
