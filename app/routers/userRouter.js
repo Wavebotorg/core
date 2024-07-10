@@ -91,7 +91,15 @@ route.post("/dexSol", dex.dexSol);
 
 // ----------------------------------------- position apis --------------------------------------------
 route.post("/getPositions", position.positionsListEvm);
-route.post("/getSolanaPositions",position.positionsListForSolana)
+route.post("/getSolanaPositions", position.positionsListForSolana);
+route.post(
+  "/getPositionSingleTokenInfoEvm",
+  position.getPositionSingleTokenInfoEvm
+);
+route.post(
+  "/getPositionSingleTokenInfoSol",
+  position.getPositionSingleTokenInfoSol
+);
 
 // route.post("/meet", userController.meet);
 

@@ -67,6 +67,16 @@ async function dexapi(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
+    const liq = await axios({
+      url: `https://public-api.dextools.io/standard/v2/pool/${network}/${token}/liquidity`,
+      method: "get",
+      headers: {
+        accept: "application/json",
+        "x-api-key": process.env.DEXTOOLAPIKEY,
+      },
+    });
+    console.log("🚀 ~ dexapi ~ liq:", liq?.data)
+
     const data = {
       name: address?.data?.data?.name,
       address: address?.data?.data?.address,
@@ -77,6 +87,11 @@ async function dexapi(req, res) {
       circulatingSupply: info?.data?.data?.circulatingSupply,
       mcap: info?.data?.data?.mcap,
       nativeTokenDetails: nativeTokenDetails ? nativeTokenDetails[0] : null,
+      variation5m: price?.data?.data?.variation5m,
+      variation1h: price?.data?.data?.variation1h,
+      variation6h: price?.data?.data?.variation6h,
+      variation24h: price?.data?.data?.variation24h,
+      liq: liq?.data?.data?.liquidity,
     };
 
     return res.status(HTTP.SUCCESS).send({
@@ -119,6 +134,14 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
+    const nativePrice = await axios({
+      url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
+      method: "get",
+      headers: {
+        accept: "application/json",
+        "x-api-key": process.env.DEXTOOLAPIKEY,
+      },
+    });
     const info = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/solana/${token}/info`,
       method: "get",
@@ -135,6 +158,14 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
+    const liq = await axios({
+      url: `https://public-api.dextools.io/standard/v2/pool/solana/${token}/liquidity`,
+      method: "get",
+      headers: {
+        accept: "application/json",
+        "x-api-key": process.env.DEXTOOLAPIKEY,
+      },
+    });
     const data = {
       name: address?.data?.data?.name,
       address: address?.data?.data?.address,
@@ -145,6 +176,12 @@ async function dexSol(req, res) {
       circulatingSupply: info?.data?.data?.circulatingSupply,
       mcap: info?.data?.data?.mcap,
       nativeTokenDetails: response,
+      nativePrice: nativePrice?.data?.data?.price,
+      variation5m: price?.data?.data?.variation5m,
+      variation1h: price?.data?.data?.variation1h,
+      variation6h: price?.data?.data?.variation6h,
+      variation24h: price?.data?.data?.variation24h,
+      liq: liq?.data?.data?.liquidity,
     };
     return res.status(HTTP.SUCCESS).send({
       status: true,

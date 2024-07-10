@@ -225,4 +225,82 @@ async function positionsListForSolana(req, res) {
   }
 }
 
-module.exports = { positionsListEvm, positionsListForSolana };
+async function getPositionSingleTokenInfoSol(req, res) {
+  try {
+    const { token, chatId, email } = req?.body;
+
+    // find wallet details
+    const walletDetails =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+
+    const dataBaseTokens = await positions.findOne({
+      network: 19999,
+      userId: walletDetails?.id,
+      tokenAddress: new RegExp(`^${token}$`, "i"),
+    });
+    if (!dataBaseTokens?.tokenAddress) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        message: "no token found!!",
+      });
+    }
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      message: "token found!!",
+      dataBaseTokens,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getPositionSingleTokenInfo ~ error:", error?.message);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.BAD_REQUEST,
+      message: "Something has been wrong!!",
+    });
+  }
+}
+async function getPositionSingleTokenInfoEvm(req, res) {
+  try {
+    const { token, chatId, email,chainId} = req?.body;
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chatId:", chatId)
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ token:", token)
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chainId:", chainId)
+
+    // find wallet details
+    const walletDetails =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+
+    const dataBaseTokens = await positions.findOne({
+      network: chainId,
+      userId: walletDetails?.id,
+      tokenAddress: new RegExp(`^${token}$`, "i"),
+    });
+    if (!dataBaseTokens?.tokenAddress) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        message: "no token found!!",
+      });
+    }
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      message: "token found!!",
+      dataBaseTokens,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getPositionSingleTokenInfo ~ error:", error?.message);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.BAD_REQUEST,
+      message: "Something has been wrong!!",
+    });
+  }
+}
+
+module.exports = { positionsListEvm, positionsListForSolana, getPositionSingleTokenInfoSol, getPositionSingleTokenInfoEvm };
