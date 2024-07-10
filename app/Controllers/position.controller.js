@@ -75,7 +75,6 @@ async function positionsListEvm(req, res) {
     // step 1
     const map = new Map();
     balancesOfEvm?.forEach((item) => map.set(item?.token_address, item));
-    const nativeToken = map.get("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
     // step 2
     positionData?.forEach(async (item) => {
       const item2 = map.get(item.tokenAddress?.toLowerCase());
@@ -104,7 +103,6 @@ async function positionsListEvm(req, res) {
       code: HTTP.SUCCESS,
       message: "Positions fetch!!",
       data: {
-        nativeToken: nativeToken,
         tokensData: mergedData,
       },
     });
@@ -211,26 +209,11 @@ async function positionsListForSolana(req, res) {
       })
     );
 
-    // find native token  details
-
-    const nativeToken = await axios({
-      url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
-      method: "get",
-      headers: {
-        accept: "application/json",
-        "x-api-key": process.env.DEXTOOLAPIKEY,
-      },
-    });
-
-    const mergeNativeToken = {
-      nativeBalance: response?.raw?.nativeBalance?.solana,
-      ...nativeToken?.data?.data,
-    };
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "Position fetched!!",
-      data: { nativeToken: mergeNativeToken, allTokenPrice },
+      data: { allTokenPrice },
     });
   } catch (error) {
     console.log("🚀 ~ positionsListForSolana ~ error:", error?.message);

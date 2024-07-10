@@ -187,7 +187,7 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute sell--------------------------"
           );
-          if (tokenBalanceUserSell <= amount) {
+          if (Number(tokenBalanceUserSell).toFixed(5) <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
@@ -209,7 +209,7 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute swap In --------------------------"
           );
-          if (tokenBalanceUserSell <= amount) {
+          if (Number(tokenBalanceUserSell).toFixed(5) <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),

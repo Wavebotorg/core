@@ -368,7 +368,9 @@ async function solanaSwapping(req, res) {
           network: 19999,
         });
         if (positionInToken?.tokenAddress) {
-          if (inTokenBalance <= amount) {
+          let splitPrice = inTokenBalance?.toString().split(".")
+          let finalPrice = Number(splitPrice[0] + "." + splitPrice[1].slice(0, 5))
+          if (finalPrice <= amount) {
             await positions.findOneAndDelete({
               _id: positionInToken?._id,
             });
