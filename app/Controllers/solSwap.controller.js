@@ -198,11 +198,13 @@ async function solanaSwapping(req, res) {
       const walletDetails =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
-
-      const outTokenBalance = await getSoalanaTokenBalance(
-        walletDetails?.solanawallet,
-        output
-      );
+        const outTokenBalance = await getSoalanaTokenBalance(
+          walletDetails?.solanawallet,
+          output
+        );
+        console.log(
+          "--------------------------------------------> called"
+        );
       console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", outTokenBalance);
 
       const amountSOL = await ethers.utils.parseUnits(
