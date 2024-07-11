@@ -20,6 +20,7 @@ const { decrypt } = require("mongoose-field-encryption");
 const TxnEvm = require("../Models/TXNevmSwap");
 const { createBTCWallet } = require("../../utils/createBitcoinWallet");
 const { url } = require("inspector");
+const { ChainNameById } = require("../kibaSwap/constant");
 
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
@@ -911,7 +912,8 @@ const removeCoinWatchlist = async (req, res) => {
 const fetchBalance = async (req, res) => {
   try {
     if (req.body.chatId) {
-      const { chatId, chainId, email } = req.body;
+      const { chatId, chainId, email,network } = req.body;
+      console.log("🚀 ~ fetchBalance ~ chainId:", chainId)
       const userfind =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
@@ -927,13 +929,54 @@ const fetchBalance = async (req, res) => {
           address: userfind.wallet,
         }
       );
-      const tokens = response?.response?.result;
+      
+      const tokens = response?.raw()?.result?.filter(
+        (item) => item?.usd_price != null
+      );
+      const map = new Map();
+      tokens?.forEach((item) => map.set(item?.token_address, item));
+
+      // find all tokens price
+      let allTokenPrice = await Promise.all(
+        tokens?.map(async (item) => {
+          try {
+            const tokenPriceResponse = await axios({
+              url: `https://public-api.dextools.io/standard/v2/token/${network}/${item?.token_address}/price`,
+              method: "get",
+              headers: {
+                accept: "application/json",
+                "x-api-key": process.env.DEXTOOLAPIKEY,
+              },
+            });
+            
+            const info = await axios({
+              url: `https://public-api.dextools.io/standard/v2/token/${network}/${item?.token_address}/info`,
+              method: "get",
+              headers: {
+                accept: "application/json",
+                "x-api-key": process.env.DEXTOOLAPIKEY,
+              },
+            });
+            const tokenBalance = map.get(item?.token_address);
+            return {
+              ...tokenBalance,
+              ...tokenPriceResponse?.data?.data,
+              ...info?.data?.data,
+            };
+          } catch (error) {
+            console.error(
+              `Error fetching price for token ${item?.token_address}:`,
+              error?.message
+            );
+          }
+        })
+      );
 
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.OK,
         message: "Here is token",
-        data: tokens,
+        data: allTokenPrice,
       });
     } else if (req.body.email) {
       const { email, chainId } = req.body;

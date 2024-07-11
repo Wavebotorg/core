@@ -122,11 +122,11 @@ async function dexSol(req, res) {
       });
     }
     const userfind = await getWalletInfo(chatId);
-    const response = await Moralis.SolApi.account.getBalance({
+    const moralisApiCall = await Moralis.SolApi.account.getBalance({
       network: "mainnet",
       address: userfind?.solanawallet,
     });
-    const price = await axios({
+    const priceApiCall = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/solana/${token}/price`,
       method: "get",
       headers: {
@@ -134,7 +134,7 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    const nativePrice = await axios({
+    const nativePriceApiCall = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
       method: "get",
       headers: {
@@ -142,7 +142,7 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    const info = await axios({
+    const infoApiCall = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/solana/${token}/info`,
       method: "get",
       headers: {
@@ -150,7 +150,7 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    const address = await axios({
+    const addressApiCall = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/solana/${token}`,
       method: "get",
       headers: {
@@ -158,7 +158,7 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    const liq = await axios({
+    const liquidityApiCall = await axios({
       url: `https://public-api.dextools.io/standard/v2/pool/solana/${token}/liquidity`,
       method: "get",
       headers: {
@@ -166,6 +166,21 @@ async function dexSol(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
+    const [
+      response,
+      price,
+      nativePrice,
+      info,
+      address,
+      liq
+    ] = await Promise.all([
+      moralisApiCall,
+      priceApiCall,
+      nativePriceApiCall,
+      infoApiCall,
+      addressApiCall,
+      liquidityApiCall
+    ]);
     const data = {
       name: address?.data?.data?.name,
       address: address?.data?.data?.address,
