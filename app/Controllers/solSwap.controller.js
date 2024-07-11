@@ -368,8 +368,10 @@ async function solanaSwapping(req, res) {
           network: 19999,
         });
         if (positionInToken?.tokenAddress) {
-          let splitPrice = inTokenBalance?.toString().split(".")
-          let finalPrice = Number(splitPrice[0] + "." + splitPrice[1].slice(0, 5))
+          let splitPrice = inTokenBalance?.toString().split(".");
+          let finalPrice = Number(
+            splitPrice[0] + "." + splitPrice[1].slice(0, 5)
+          );
           if (finalPrice <= amount) {
             await positions.findOneAndDelete({
               _id: positionInToken?._id,
@@ -451,12 +453,51 @@ async function solanaBalanceFetch(req, res) {
         });
       }
 
+      const map = new Map();
+      walletTokensDetails?.tokens?.forEach((item) => map.set(item?.mint, item));
+
+      // find all tokens price
+      let allTokenPrice = await Promise.all(
+        walletTokensDetails?.tokens?.map(async (item) => {
+          try {
+            const tokenPriceResponse = await axios({
+              url: `https://public-api.dextools.io/standard/v2/token/solana/${item?.mint}/price`,
+              method: "get",
+              headers: {
+                accept: "application/json",
+                "x-api-key": process.env.DEXTOOLAPIKEY,
+              },
+            });
+            return {
+              address: item?.mint,
+              ...item,
+              ...tokenPriceResponse?.data?.data,
+            };
+          } catch (error) {
+            console.error(
+              ` Error fetching price for token ${item?.mint}:`,
+              error?.message
+            );
+          }
+        })
+      );
+      console.log("🚀 ~ solanaBalanceFetch ~ allTokenPrice:", allTokenPrice);
+      const tokenPriceResponse = await axios({
+        url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
+        method: "get",
+        headers: {
+          accept: "application/json",
+          "x-api-key": process.env.DEXTOOLAPIKEY,
+        },
+      });
+
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
         message: "balance fetch successfully !",
-        data: walletTokensDetails?.tokens,
+        data: allTokenPrice,
         native: walletTokensDetails?.nativeBalance?.solana,
+        nativePrice: tokenPriceResponse?.data?.data?.price,
         walletAddress: walletDetails.solanawallet,
       });
     }
@@ -482,12 +523,51 @@ async function solanaBalanceFetch(req, res) {
           data: {},
         });
       }
+      const map = new Map();
+      walletTokensDetails?.tokens?.forEach((item) => map.set(item?.mint, item));
+
+      // find all tokens price
+      let allTokenPrice = await Promise.all(
+        walletTokensDetails?.tokens?.map(async (item) => {
+          try {
+            const tokenPriceResponse = await axios({
+              url: `https://public-api.dextools.io/standard/v2/token/solana/${item?.mint}/price`,
+              method: "get",
+              headers: {
+                accept: "application/json",
+                "x-api-key": process.env.DEXTOOLAPIKEY,
+              },
+            });
+            return {
+              address: item?.mint,
+              ...item,
+              ...tokenPriceResponse?.data?.data,
+            };
+          } catch (error) {
+            console.error(
+              ` Error fetching price for token ${item?.mint}:`,
+              error?.message
+            );
+          }
+        })
+      );
+      console.log("🚀 ~ solanaBalanceFetch ~ allTokenPrice:", allTokenPrice);
+      const tokenPriceResponse = await axios({
+        url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
+        method: "get",
+        headers: {
+          accept: "application/json",
+          "x-api-key": process.env.DEXTOOLAPIKEY,
+        },
+      });
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
         message: "balance fetch successfully !",
-        data: walletTokensDetails?.tokens,
-        walletAddress: user.solanawallet,
+        data: allTokenPrice,
+        native: walletTokensDetails?.nativeBalance?.solana,
+        nativePrice: tokenPriceResponse?.data?.data?.price,
+        walletAddress: walletDetails.solanawallet,
       });
     }
   } catch (error) {
