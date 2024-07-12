@@ -6,6 +6,7 @@ const { default: Moralis } = require("moralis");
 const { chainUrl } = require("../kibaSwap/constant");
 const { findOneAndDelete } = require("../Models/userModel");
 const positions = require("../Models/positions");
+const { getTokenBalance } = require("../kibaSwap/getBalance");
 
 async function sendERC20Token(req, res) {
   try {
@@ -182,7 +183,7 @@ async function sendERC20Token(req, res) {
         console.log(
           "----------------------------execute transfer--------------------------"
         );
-        if (transferTokenokenBalance <= amount) {
+        if (transferTokenokenBalance <= Number(amount)?.toFixed(5)) {
           await positions.findOneAndDelete({ _id: positionToken?._id });
         }
       }

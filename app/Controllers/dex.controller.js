@@ -7,6 +7,7 @@ const { getEthBalance } = require("../kibaSwap/getBalanceOfNativeToken");
 
 async function dexapi(req, res) {
   const { token, chain, nativeToken, chatId, network } = req.body;
+  console.log("🚀 ~ dexapi ~ network:", network)
   console.log("🚀 ~ dexapi ~ chain:", chain);
   console.log("🚀 ~ dexapi ~ network:", network);
   console.log("🚀 ~ dexapi ~ token:", token);
@@ -75,7 +76,6 @@ async function dexapi(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    console.log("🚀 ~ dexapi ~ liq:", liq?.data)
 
     const data = {
       name: address?.data?.data?.name,

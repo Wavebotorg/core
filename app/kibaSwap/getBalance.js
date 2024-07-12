@@ -51,6 +51,7 @@ async function getTokenBalance(tokenContractAddress, walletAddress, provider) {
     return bal;
   } catch (error) {
     console.error("Error fetching balance or decimals:", error?.message);
+    return 0
   }
 }
 

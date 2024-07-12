@@ -6,6 +6,7 @@ const HTTP = require("../../constants/responseCode.constant");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
 const positions = require("../Models/positions");
+const { getSoalanaTokenBalance } = require("../kibaSwap/getSolanabalance");
 const { PublicKey, Keypair, Connection, LAMPORTS_PER_SOL } = web3;
 
 async function solanaTransfer(req, res) {
@@ -156,7 +157,7 @@ async function solanaTransfer(req, res) {
       dollar: Number(tokenInDollar.toFixed(5)),
     });
 
-    if (receipt?.transactionHash) {
+    if (signature) {
       const positionToken = await positions.findOne({
         userId: walletDetails?.id,
         tokenAddress: new RegExp(`^${token}$`, "i"),
@@ -167,7 +168,7 @@ async function solanaTransfer(req, res) {
         console.log(
           "---------------------------- execute sell --------------------------"
         );
-        if (tokenBalance <= amount) {
+        if (tokenBalance <= Number(amount)?.toFixed(5)) {
           await positions.findOneAndDelete({ _id: positionToken?._id });
         }
       }
