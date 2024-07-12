@@ -194,7 +194,7 @@ async function positionsListForSolana(req, res) {
           return {
             address: item?.tokenAddress,
             price_at_invested: item?.currentPrice,
-            percentage: `${percentageChange?.toFixed(3)}%`,
+            percentage: `${percentageChange?.toFixed(3)}`,
             ...tokenPriceResponse?.data?.data,
             ...tokenBalance,
             ...info?.data?.data,
