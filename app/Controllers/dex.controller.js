@@ -86,6 +86,7 @@ async function dexapi(req, res) {
       totalSupply: info?.data?.data?.totalSupply,
       circulatingSupply: info?.data?.data?.circulatingSupply,
       mcap: info?.data?.data?.mcap,
+      makers: info?.data?.data?.holders,
       nativeTokenDetails: nativeTokenDetails ? nativeTokenDetails[0] : null,
       variation5m: price?.data?.data?.variation5m,
       variation1h: price?.data?.data?.variation1h,
@@ -181,6 +182,10 @@ async function dexSol(req, res) {
       addressApiCall,
       liquidityApiCall
     ]);
+    console.log("🚀 ~ dexSol ~ liq:", liq?.data?.data)
+    console.log("🚀 ~ dexSol ~ address:", address?.data?.data)
+    console.log("🚀 ~ dexSol ~ info:", info?.data?.data)
+    console.log("🚀 ~ dexSol ~ price:", price?.data?.data)
     const data = {
       name: address?.data?.data?.name,
       address: address?.data?.data?.address,
@@ -192,6 +197,7 @@ async function dexSol(req, res) {
       mcap: info?.data?.data?.mcap,
       nativeTokenDetails: response,
       nativePrice: nativePrice?.data?.data?.price,
+      makers:info?.data?.data?.holders,
       variation5m: price?.data?.data?.variation5m,
       variation1h: price?.data?.data?.variation1h,
       variation6h: price?.data?.data?.variation6h,

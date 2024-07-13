@@ -104,6 +104,7 @@ async function positionsListEvm(req, res) {
       message: "Positions fetch!!",
       data: {
         tokensData: mergedData,
+        nativeToken: balancesOfEvm[0]
       },
     });
   } catch (error) {
@@ -208,12 +209,20 @@ async function positionsListForSolana(req, res) {
         }
       })
     );
+    const tokenPriceResponse = await axios({
+      url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
+      method: "get",
+      headers: {
+        accept: "application/json",
+        "x-api-key": process.env.DEXTOOLAPIKEY,
+      },
+    });
 
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "Position fetched!!",
-      data: { allTokenPrice },
+      data: { allTokenPrice, solanaInfo:tokenPriceResponse?.data?.data?.price },
     });
   } catch (error) {
     console.log("🚀 ~ positionsListForSolana ~ error:", error?.message);

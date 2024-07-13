@@ -168,7 +168,7 @@ async function solanaTransfer(req, res) {
         console.log(
           "---------------------------- execute sell --------------------------"
         );
-        if (tokenBalance <= Number(amount)?.toFixed(5)) {
+        if (tokenBalance <= amount) {
           await positions.findOneAndDelete({ _id: positionToken?._id });
         }
       }

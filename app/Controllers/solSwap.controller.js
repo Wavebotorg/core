@@ -172,7 +172,6 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
 
 async function solanaSwapping(req, res) {
   const { input, output, chatId, amount, email, desBot, method } = req.body;
-  console.log("🚀 ~ solanaSwapping ~ method:", method);
   console.log("🚀 ~ solanaSwapping ~ req.body:", req.body);
   if (!Moralis.Core.isStarted) {
     await Moralis.start({
@@ -198,13 +197,11 @@ async function solanaSwapping(req, res) {
       const walletDetails =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
-        const outTokenBalance = await getSoalanaTokenBalance(
-          walletDetails?.solanawallet,
-          output
-        );
-        console.log(
-          "--------------------------------------------> called"
-        );
+      const outTokenBalance = await getSoalanaTokenBalance(
+        walletDetails?.solanawallet,
+        output
+      );
+      console.log("--------------------------------------------> called");
       console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", outTokenBalance);
 
       const amountSOL = await ethers.utils.parseUnits(
@@ -370,11 +367,7 @@ async function solanaSwapping(req, res) {
           network: 19999,
         });
         if (positionInToken?.tokenAddress) {
-          let splitPrice = inTokenBalance?.toString().split(".");
-          let finalPrice = Number(
-            splitPrice[0] + "." + splitPrice[1].slice(0, 5)
-          );
-          if (finalPrice <= amount) {
+          if (inTokenBalance <= amount || Number(inTokenBalance).toFixed(3) <= amount || Number(inTokenBalance).toFixed(2) <= amount) {
             await positions.findOneAndDelete({
               _id: positionInToken?._id,
             });
