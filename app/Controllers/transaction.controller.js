@@ -274,6 +274,92 @@ async function totalTransactionCount(req, res) {
   });
 }
 
+async function countDocByDuration(network, duration) {
+  console.log("🚀 ~ countDocByDuration ~ network:", network);
+  let startDate = new Date();
+
+  // adjust startDate based on duration
+  switch (duration) {
+    case "1 week":
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case "1 day":
+      startDate.setDate(startDate.getDate() - 1);
+      startDate.setHours(0, 0, 0, 0); // Set to midnight
+      break;
+    case "1 month":
+      startDate.setMonth(startDate.getMonth() - 1);
+      startDate.setDate(1); // Set to the 1st of the month
+      startDate.setHours(0, 0, 0, 0); // Set to midnight
+
+      break;
+    case "1 year":
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      startDate.setMonth(0); // Set to January
+      startDate.setDate(1); // Set to the 1st of January
+      startDate.setHours(0, 0, 0, 0); // Set to midnight
+      break;
+    default:
+      throw new Error("Invalid time range");
+  }
+
+  const count = await transfer.countDocuments({ createdAt: { $gte: startDate }, network });
+  return count;
+}
+
+async function getTransfersData(req, res) {
+  try {
+    const { chainId } = req.body;
+    console.log("🚀 ~ getTransfersData ~  req.body;:", req.body);
+
+    const lastDay = await countDocByDuration(chainId, "1 day");
+    const lastWeek = await countDocByDuration(chainId, "1 week");
+    const lastMonth = await countDocByDuration(chainId, "1 month");
+    const lastYear = await countDocByDuration(chainId, "1 year");
+    const total = await transfer.countDocuments({ network: chainId });
+
+    const txnData = await TxnEvm.aggregate([
+      {
+        $match: {
+          method: { $in: ["buy", "sell", "transfer", "swap"] },
+          chainId: chainId,
+        },
+      },
+      {
+        $group: {
+          _id: "$method",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("🚀 ~ getTransfersData ~ txnData:", txnData);
+    const formattedTxn = {};
+    let totalTxn = 0;
+    txnData.forEach((item) => {
+      if (item._id != null) {
+        totalTxn += item.count;
+        formattedTxn[item._id] = item.count;
+      }
+    });
+
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "Data successfully fetched.",
+      lastDay,
+      lastWeek,
+      lastMonth,
+      lastYear,
+      total,
+      txn: formattedTxn,
+      totalTxn,
+    });
+  } catch (error) {
+    console.log("🚀 ~ getTransfersData ~ error:", error);
+    return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.UNAUTHORIZED, msg: "Something went wrong!" });
+  }
+}
+
 module.exports = {
   solanatransaction,
   evmtransaction,
@@ -282,4 +368,5 @@ module.exports = {
   allTransactionHistory,
   totalTransactionCount,
   transactions,
+  getTransfersData
 };
