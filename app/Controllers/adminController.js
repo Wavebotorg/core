@@ -232,8 +232,10 @@ const showUser = async (req, res) => {
   try {
     const { id } = req.params;
     let userData = await userModel
-      .find({ _id: id, role: "user" })
-      .select("-password -otp -role -hashedPrivateKey -solanaPK");
+      .find({ _id: id, role: "user" }).populate({
+        path: "referred",
+        select:"name email _id"
+      }).select("-password -otp -role -hashedPrivateKey -solanaPK");
     if (!userData || userData.length === 0) {
       return res
         .status(HTTP.SUCCESS)
