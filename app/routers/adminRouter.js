@@ -77,4 +77,7 @@ router.get(
 
 // // get evm transactions count
 // router.get("/evmCount", authadmin, transactions.evmTransactionsCount);
+
+//  total transaction count by selection chain 
+router.post("/getTransfers", authadmin, transactions.getTransfersData);
 module.exports = router;
