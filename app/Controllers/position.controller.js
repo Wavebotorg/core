@@ -87,6 +87,7 @@ async function positionsListEvm(req, res) {
           value_in_usd: item2?.usd_value,
           price_at_invested: item?.currentPrice,
           symbol: item2?.symbol,
+          name:item2?.name,
           percentage_of_growth: percentageChange.toFixed(3),
           currentPrice: item2?.usd_price,
           usd_price_24hr_percent_change: item2?.usd_price_24hr_percent_change,
