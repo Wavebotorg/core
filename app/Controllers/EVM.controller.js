@@ -187,7 +187,7 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute sell--------------------------"
           );
-          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5)-0.00001
+          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5)
           if (finalSellAmt <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
@@ -210,7 +210,7 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute swap In --------------------------"
           );
-          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5) - 0.00001
+          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5)
           if (finalSellAmt <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
