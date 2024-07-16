@@ -84,7 +84,9 @@ async function solanaTransfer(req, res) {
     console.log("Decimals:", decimals);
 
     // Convert amount to BigInt number
-    const amountIn = BigInt(amount * Math.pow(10, decimals));
+    let part = amount?.toString()?.split(".")
+    let finalAmount= part[0]+"."+part[1]?.slice(0,5)
+    const amountIn = BigInt(Number(finalAmount) * Math.pow(10, decimals));   
 
     // To wallet address
     const destPublicKey = new PublicKey(toWallet);
