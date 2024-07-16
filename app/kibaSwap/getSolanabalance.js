@@ -35,9 +35,9 @@ const getSoalanaTokenBalance = async (walletAddress, tokenMintAddress) => {
   }
 };
 
-// Example usage
+// // Example usage
 // const walletAddress = 'HN1HTsJ1QPzh3woLXJHnSWvVHZhPdxqgiL8sUb7m2s1u';
-// const tokenMintAddress = '8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB';
+// const tokenMintAddress = 'So11111111111111111111111111111111111111112';
 
 // getSoalanaTokenBalance(walletAddress, tokenMintAddress)
 //     .then(balance => {

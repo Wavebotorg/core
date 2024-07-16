@@ -476,7 +476,6 @@ async function solanaBalanceFetch(req, res) {
           }
         })
       );
-      console.log("🚀 ~ solanaBalanceFetch ~ allTokenPrice:", allTokenPrice);
       const tokenPriceResponse = await axios({
         url: `https://public-api.dextools.io/standard/v2/token/solana/So11111111111111111111111111111111111111112/price`,
         method: "get",

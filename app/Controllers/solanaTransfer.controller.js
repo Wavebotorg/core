@@ -164,12 +164,14 @@ async function solanaTransfer(req, res) {
         network: 19999,
       });
       console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
-      if (positionToken?.tokenAddress) {
-        console.log(
-          "---------------------------- execute sell --------------------------"
-        );
-        if (tokenBalance <= amount) {
-          await positions.findOneAndDelete({ _id: positionToken?._id });
+      if (token != "So11111111111111111111111111111111111111112") {
+        if (positionToken?.tokenAddress) {
+          console.log(
+            "---------------------------- execute sell --------------------------"
+          );
+          if (tokenBalance <= amount) {
+            await positions.findOneAndDelete({ _id: positionToken?._id });
+          }
         }
       }
     }

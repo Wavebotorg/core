@@ -41,7 +41,8 @@ async function EVMSwapMain(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-    let amountInDollar = price?.data?.data?.price * amount;``
+    let amountInDollar = price?.data?.data?.price * amount;
+    ``;
     console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
     const provider = getProvider(chain, chainId);
     // find wallet details
@@ -187,8 +188,14 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute sell--------------------------"
           );
-          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5)
-          if (finalSellAmt <= amount) {
+          let finalAmount;
+          let partAmount = tokenBalanceUserSell?.toString()?.split(".");
+          if (partAmount[1]?.length > 5) {
+            finalAmount = partAmount[0] + "." + partAmount[1]?.slice(0, 5);
+          } else {
+            finalAmount = tokenBalanceUserSell;
+          }
+          if (finalAmount <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
@@ -210,8 +217,14 @@ async function EVMSwapMain(req, res) {
           console.log(
             "----------------------------execute swap In --------------------------"
           );
-          const finalSellAmt = Number(tokenBalanceUserSell).toFixed(5)
-          if (finalSellAmt <= amount) {
+          let finalAmount;
+          let partAmount = tokenBalanceUserSell?.toString()?.split(".");
+          if (partAmount[1]?.length > 5) {
+            finalAmount = partAmount[0] + "." + partAmount[1]?.slice(0, 5);
+          } else {
+            finalAmount = tokenBalanceUserSell;
+          }
+          if (finalAmount <= amount) {
             await positions.findOneAndDelete({
               userId: walletDetails?.id,
               tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
