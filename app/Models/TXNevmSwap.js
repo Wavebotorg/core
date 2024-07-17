@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { connectDBs } = require("../../config/Connect");
+const { maindb } = connectDBs();
 
 const txnEvmSwap = new mongoose.Schema(
   {
@@ -34,6 +36,6 @@ const txnEvmSwap = new mongoose.Schema(
   { timestamps: true }
 );
 
-const TxnEvm = mongoose.model("TxnEvm", txnEvmSwap);
+const TxnEvm = maindb.model("TxnEvm", txnEvmSwap);
 
 module.exports = TxnEvm;

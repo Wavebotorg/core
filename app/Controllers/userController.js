@@ -21,6 +21,34 @@ const TxnEvm = require("../Models/TXNevmSwap");
 const { createBTCWallet } = require("../../utils/createBitcoinWallet");
 const { url } = require("inspector");
 const { ChainNameById } = require("../kibaSwap/constant");
+const { keypair, encryptData } = require("../Models/keypair");
+
+// ------------------------testing-------------------------------
+
+// generating key
+const generateHexKey = () => {
+  return crypto.randomBytes(32).toString('hex')
+}
+// const hexKey = generateHexKey()
+// console.log("🚀 Generated Hex Key:", hexKey)
+
+
+// check data
+const checkData = async (req, res) => {
+  try {
+    const { email, chatId } = req.body;
+    // console.log("🚀 ~ checkData ~ email:", email);
+    // const data = await getWalletInfo(chatId);
+    const data = await getWalletInfoByEmail(email);
+
+    return res.status(HTTP.SUCCESS).send({ msg: "slay", data });
+  } catch (error) {
+    console.log("🚀 ~ checkData ~ error:", error);
+    return res
+      .status(HTTP.SUCCESS)
+      .send({ status: false, code: HTTP.INTERNAL_SERVER_ERROR, msg: "Something Went Wrong", error: error.message });
+  }
+};
 
 // ========================================= generate solana wallet===============================
 const generateWallet = () => {
@@ -35,13 +63,9 @@ const generateWallet = () => {
 };
 // SignUp New User Account
 const signUp = async (req, res) => {
-  console.log(
-    "=============================== Sign Up =============================",
-    req.body
-  );
+  console.log("=============================== Sign Up =============================", req.body);
   try {
-    const { name, email, password, confirmPassword, chatId, refferal } =
-      req.body;
+    const { name, email, password, confirmPassword, chatId, refferal } = req.body;
     if (!name || !email || !password || !confirmPassword)
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -209,22 +233,15 @@ const login = async (req, res) => {
               chatExists = true;
               if (!findUser.chatingId[i].session) {
                 findUser.chatingId[i].session = true;
-                await userModel.updateOne(
-                  { _id: findUser._id },
-                  { $set: { chatingId: findUser.chatingId } }
-                );
-                console.log(
-                  "🚀 ~ login ~ Session set to true for existing chatId"
-                );
+                await userModel.updateOne({ _id: findUser._id }, { $set: { chatingId: findUser.chatingId } });
+                console.log("🚀 ~ login ~ Session set to true for existing chatId");
               }
               break;
             }
           }
           if (!chatExists) {
             if (findUser?.chatingId?.length >= 4) {
-              const index = findUser.chatingId.findIndex(
-                (obj) => obj.session === false
-              );
+              const index = findUser.chatingId.findIndex((obj) => obj.session === false);
               if (index !== -1) {
                 findUser.chatingId.splice(index, 1);
               } else {
@@ -274,9 +291,10 @@ const verify = async (req, res) => {
   console.log("===================== Verify =================", req.body);
   try {
     const { email, chatId, otp } = req.body;
-    const findUser =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
+    console.log("🚀 ~ verify ~ req.body:", req.body);
+    // const findUser = chatId || email;
+    // console.log("🚀 ~ verify ~ findUser:", findUser)
+
     if (email) {
       if (!email.includes("@"))
         return res.status(HTTP.SUCCESS).send({
@@ -286,7 +304,8 @@ const verify = async (req, res) => {
           data: {},
         });
     }
-    const findEmail = await userModel.findOne({ email: findUser?.email });
+    
+    const findEmail = await userModel.findOne({ email }); //findUser?.email
 
     if (!findEmail)
       return res.status(HTTP.SUCCESS).send({
@@ -297,7 +316,7 @@ const verify = async (req, res) => {
 
     if (findEmail.otp == otp) {
       const Update = await userModel.findOneAndUpdate(
-        { email: findUser?.email },
+        { email }, //: findUser?.email
         { verify: true, otp: 0 },
         { new: true }
       );
@@ -309,7 +328,7 @@ const verify = async (req, res) => {
           msg: "Something Went Wrong",
         });
 
-      const existingUser = await userModel.findOne({ email: findUser?.email });
+      const existingUser = await userModel.findOne({ email }); //: findUser?.email
 
       if (!existingUser)
         return res.status(HTTP.NOT_FOUND).send({
@@ -322,20 +341,84 @@ const verify = async (req, res) => {
       if (!existingUser?.referralId) {
         const wallet = await ethers.Wallet.createRandom();
         const walletAddress = wallet.address;
-        const walletPrivateKey = wallet.privateKey;
+        //const walletPrivateKey = wallet.privateKey;
         const { solanaAddress, solanaPrivateKey } = await generateWallet();
-        const { BTCprivateKeyWIF, BTCprivateKeyHex, address } =
-          await createBTCWallet();
+        const { BTCprivateKeyWIF, BTCprivateKeyHex, address } = await createBTCWallet();
+
+        // * walletPrivateKey | solanaPrivateKey | BTCprivateKeyHex
+
+        const evmKey = wallet.privateKey,
+          btcKey = BTCprivateKeyHex,
+          solKey = solanaPrivateKey;
+        // console.log("🚀 ~ verify ~ evmKey:", evmKey);
+        // console.log("🚀 ~ verify ~ btcKey:", btcKey);
+        // console.log("🚀 ~ verify ~ solKey:", solKey);
+
+        // split the data into 3 parts
+        const part1 = evmKey.slice(0, Math.ceil(evmKey.length / 3));
+        const part2 = evmKey.slice(Math.ceil(evmKey.length / 3), Math.ceil((2 * evmKey.length) / 3));
+        const part3 = evmKey.slice(Math.ceil((2 * evmKey.length) / 3));
+
+        // split the 64-character string of letters and numbers into three parts
+        const p1 = btcKey.substring(0, 21);
+        const p2 = btcKey.substring(21, 42);
+        const p3 = btcKey.substring(42);
+
+        // splitting the array into three parts
+        const chunkSize = Math.ceil(solKey.length / 3);
+        const prt1 = solKey.slice(0, chunkSize);
+        const prt2 = solKey.slice(chunkSize, 2 * chunkSize);
+        const prt3 = solKey.slice(2 * chunkSize);
+
+        const keyIchi = Buffer.from(process.env.keyHexIchi, "hex");
+        const keyNi = Buffer.from(process.env.keyHexNi, "hex");
+        const keySan = Buffer.from(process.env.keyHexSan, "hex");
+
+        // encrypting each part
+        const encPart1 = encryptData(JSON.stringify(part1), keyIchi);
+        const encPart2 = encryptData(JSON.stringify(part2), keyNi);
+        const encPart3 = encryptData(JSON.stringify(part3), keySan);
+
+        const encP1 = encryptData(JSON.stringify(p1), keyIchi);
+        const encP2 = encryptData(JSON.stringify(p2), keyNi);
+        const encP3 = encryptData(JSON.stringify(p3), keySan);
+
+        const encPrt1 = encryptData(JSON.stringify(prt1), keyIchi);
+        const encPrt2 = encryptData(JSON.stringify(prt2), keyNi);
+        const encPrt3 = encryptData(JSON.stringify(prt3), keySan);
+
+        await new keypair({
+          userId: existingUser._id,
+          evmData: encPart1,
+          btcData: encP1,
+          solData: encPrt1,
+          flag: "ichi",
+        }).save();
+        await new keypair({
+          userId: existingUser._id,
+          evmData: encPart2,
+          btcData: encP2,
+          solData: encPrt2,
+          flag: "ni",
+        }).save();
+        await new keypair({
+          userId: existingUser._id,
+          evmData: encPart3,
+          btcData: encP3,
+          solData: encPrt3,
+          flag: "san",
+        }).save();
+
         const updatedUser = await userModel.findOneAndUpdate(
-          { email: findUser?.email },
+          { email }, //: findUser?.email
           {
             $set: {
               wallet: walletAddress,
-              hashedPrivateKey: walletPrivateKey,
-              solanaPK: solanaPrivateKey,
+              // hashedPrivateKey: walletPrivateKey,
+              // solanaPK: solanaPrivateKey,
               solanawallet: solanaAddress,
               btcWallet: address,
-              btcPK: BTCprivateKeyHex,
+              // btcPK: BTCprivateKeyHex,
               chatingId: {
                 chatId: chatId ? chatId : null,
                 session: chatId ? true : null,
@@ -361,18 +444,12 @@ const verify = async (req, res) => {
             data: {},
           });
         const ref1 = walletAddress?.slice(-4);
-        const ref2 = findUser?.email?.substring(
-          0,
-          findUser?.email?.indexOf("@")
-        );
+        const ref2 = email?.substring(0, email?.indexOf("@"));// findUser?.email?.substring(0, findUser?.email?.indexOf("@"));
         findEmail.referralId = ref1 + ref2?.slice(0, 4);
       }
       if (chatId) {
         // const user = await userModel.find({ chatId: chatId });
-        await userModel.updateMany(
-          { "chatId.chat": chatId },
-          { $set: { "chatId.sessionId": false } }
-        );
+        await userModel.updateMany({ "chatId.chat": chatId }, { $set: { "chatId.sessionId": false } });
       }
       const updatedChatId = chatId || null;
       if (chatId) {
@@ -418,9 +495,7 @@ const verifyUser = async (req, res) => {
   console.log("===================== Verify =================", req.body);
   try {
     const { email, chatId, otp } = req.body;
-    const findUser =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
+    const findUser = (chatId && (await getWalletInfo(chatId))) || (email && (await getWalletInfoByEmail(email)));
     if (email) {
       if (!email.includes("@"))
         return res.status(HTTP.SUCCESS).send({
@@ -524,11 +599,7 @@ const resendOTP = async (req, res) => {
         templetpath: "./emailtemplets/otp_template.html",
       };
       sendMail(data);
-      await userModel.findOneAndUpdate(
-        { email: req.body.email },
-        { otp: random_Number },
-        { new: true }
-      );
+      await userModel.findOneAndUpdate({ email: req.body.email }, { otp: random_Number }, { new: true });
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
@@ -574,11 +645,7 @@ const ForgetPassword = async (req, res) => {
         templetpath: "./emailtemplets/otp_template.html",
       };
       sendMail(data);
-      await userModel.findOneAndUpdate(
-        { email: req.body.email },
-        { otp: random_Number },
-        { new: true }
-      );
+      await userModel.findOneAndUpdate({ email: req.body.email }, { otp: random_Number }, { new: true });
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
@@ -602,14 +669,10 @@ const ForgetPassword = async (req, res) => {
   }
 };
 const resetPassword = async (req, res) => {
-  console.log(
-    "=============================== reset password ============================="
-  );
+  console.log("=============================== reset password =============================");
   try {
     const { password, confirmPassword, email, chatId } = req.body;
-    const findUser =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
+    const findUser = (chatId && (await getWalletInfo(chatId))) || (email && (await getWalletInfoByEmail(email)));
     if (!password && !confirmPassword) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -620,11 +683,7 @@ const resetPassword = async (req, res) => {
     if (findUser) {
       if (password === confirmPassword) {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await userModel.findOneAndUpdate(
-          { email: findUser?.email },
-          { password: hashedPassword },
-          { new: true }
-        );
+        await userModel.findOneAndUpdate({ email: findUser?.email }, { password: hashedPassword }, { new: true });
         return res.status(HTTP.SUCCESS).send({
           status: true,
           code: HTTP.SUCCESS,
@@ -656,10 +715,7 @@ const resetPassword = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
-    console.log(
-      "🚀 ~ changePassword ~ confirmNewPassword:",
-      confirmNewPassword
-    );
+    console.log("🚀 ~ changePassword ~ confirmNewPassword:", confirmNewPassword);
     console.log("🚀 ~ changePassword ~ newPassword:", newPassword);
     console.log("🚀 ~ changePassword ~ currentPassword:", currentPassword);
     const email = req?.user?.email;
@@ -673,9 +729,7 @@ const changePassword = async (req, res) => {
     }
     const findData = await userModel.findOne({ email: email });
     if (!findData) {
-      return res
-        .status(HTTP.SUCCESS)
-        .send({ status: false, code: HTTP.NOT_FOUND, msg: "User not found." });
+      return res.status(HTTP.SUCCESS).send({ status: false, code: HTTP.NOT_FOUND, msg: "User not found." });
     }
     bcrypt.compare(currentPassword, findData.password, async (err, result) => {
       if (err) {
@@ -689,10 +743,7 @@ const changePassword = async (req, res) => {
       if (result) {
         if (newPassword === confirmNewPassword) {
           const hashedPassword = await bcrypt.hash(newPassword, 10);
-          await userModel.findOneAndUpdate(
-            { _id: findData._id },
-            { password: hashedPassword }
-          );
+          await userModel.findOneAndUpdate({ _id: findData._id }, { password: hashedPassword });
           return res.status(HTTP.SUCCESS).send({
             status: true,
             code: HTTP.SUCCESS,
@@ -724,33 +775,26 @@ const changePassword = async (req, res) => {
 };
 
 async function getData() {
-  console.log(
-    "=============================== update watchlist with API data ============================="
-  );
+  console.log("=============================== update watchlist with API data =============================");
   try {
     // Make a request to the CoinGecko API
-    const response = await axios.get(
-      "https://api.coingecko.com/api/v3/coins/markets",
-      {
-        params: {
-          vs_currency: "USD",
-          order: "market_cap_desc",
-          per_page: 250,
-          page: 1,
-          sparkline: false,
-          locale: "en",
-        },
-      }
-    );
+    const response = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
+      params: {
+        vs_currency: "USD",
+        order: "market_cap_desc",
+        per_page: 250,
+        page: 1,
+        sparkline: false,
+        locale: "en",
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("Error updating watchlist with API data:", error);
   }
 }
 const watchList = async (req, res) => {
-  console.log(
-    "=============================== watchList  ============================="
-  );
+  console.log("=============================== watchList  =============================");
   try {
     const { coinId } = req.body;
     const AlreadyCoin = await userModel.findOne({
@@ -765,20 +809,14 @@ const watchList = async (req, res) => {
         data: {},
       });
     }
-    await userModel.findOneAndUpdate(
-      { email: req.user.email },
-      { $push: { watchlist: coinId } },
-      { new: true }
-    );
+    await userModel.findOneAndUpdate({ email: req.user.email }, { $push: { watchlist: coinId } }, { new: true });
     return res.json({
       success: true,
       msg: "Coin added to watchlist successfully",
     });
   } catch (error) {
     console.error("Error in watchList:", error);
-    return res
-      .status(500)
-      .json({ success: false, msg: "Something went wrong", error: error.msg });
+    return res.status(500).json({ success: false, msg: "Something went wrong", error: error.msg });
   }
 };
 //get user profile
@@ -817,10 +855,7 @@ async function getUserProfile(req, res) {
 // Recent Join
 async function recentUsers(req, res) {
   try {
-    const newusers = await userModel
-      .find({ role: "user" })
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const newusers = await userModel.find({ role: "user" }).sort({ createdAt: -1 }).limit(10);
     let newuser = [];
     for (data of newusers) {
       newuser.push({
@@ -853,9 +888,7 @@ async function recentUsers(req, res) {
 }
 // Get All WatchList
 async function allWatchList(req, res) {
-  console.log(
-    "=============================== All WatchList  ============================="
-  );
+  console.log("=============================== All WatchList  =============================");
   try {
     const newusers = await userModel.findById(req.user._id);
     return res.status(HTTP.SUCCESS).send({
@@ -875,9 +908,7 @@ async function allWatchList(req, res) {
 }
 const removeCoinWatchlist = async (req, res) => {
   try {
-    console.log(
-      "==============================removeCoinWatchlist============================="
-    );
+    console.log("==============================removeCoinWatchlist=============================");
     const updatedUser = await userModel.findOneAndUpdate(
       { _id: req.user._id },
       { $pull: { watchlist: req.body.coinId } },
@@ -912,27 +943,21 @@ const removeCoinWatchlist = async (req, res) => {
 const fetchBalance = async (req, res) => {
   try {
     if (req.body.chatId) {
-      const { chatId, chainId, email,network } = req.body;
-      console.log("🚀 ~ fetchBalance ~ chainId:", chainId)
-      const userfind =
-        (chatId && (await getWalletInfo(chatId))) ||
-        (email && (await getWalletInfoByEmail(email)));
+      const { chatId, chainId, email, network } = req.body;
+      console.log("🚀 ~ fetchBalance ~ chainId:", chainId);
+      const userfind = (chatId && (await getWalletInfo(chatId))) || (email && (await getWalletInfoByEmail(email)));
 
       if (!Moralis.Core.isStarted) {
         await Moralis.start({
           apiKey: process.env.PUBLIC_MORALIS_API_KEY,
         });
       }
-      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice(
-        {
-          chain: chainId,
-          address: userfind.wallet,
-        }
-      );
-      
-      const tokens = response?.raw()?.result?.filter(
-        (item) => item?.usd_price != null
-      );
+      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
+        chain: chainId,
+        address: userfind.wallet,
+      });
+
+      const tokens = response?.raw()?.result?.filter((item) => item?.usd_price != null);
       const map = new Map();
       tokens?.forEach((item) => map.set(item?.token_address, item));
 
@@ -948,7 +973,7 @@ const fetchBalance = async (req, res) => {
                 "x-api-key": process.env.DEXTOOLAPIKEY,
               },
             });
-            
+
             const info = await axios({
               url: `https://public-api.dextools.io/standard/v2/token/${network}/${item?.token_address}/info`,
               method: "get",
@@ -964,10 +989,7 @@ const fetchBalance = async (req, res) => {
               ...info?.data?.data,
             };
           } catch (error) {
-            console.error(
-              `Error fetching price for token ${item?.token_address}:`,
-              error?.message
-            );
+            console.error(`Error fetching price for token ${item?.token_address}:`, error?.message);
           }
         })
       );
@@ -988,12 +1010,10 @@ const fetchBalance = async (req, res) => {
           apiKey: process.env.PUBLIC_MORALIS_API_KEY,
         });
       }
-      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice(
-        {
-          chain: chainId,
-          address: userfind.wallet,
-        }
-      );
+      const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
+        chain: chainId,
+        address: userfind.wallet,
+      });
       const tokens = response?.response?.result;
       return res.status(HTTP.SUCCESS).send({
         status: true,
@@ -1039,10 +1059,7 @@ async function getSingleTokenPrice(req, res) {
     const nativeTokenDetails = await rawResponse?.result.filter(
       (item) => item?.token_address == nativeToken?.toLowerCase()
     );
-    console.log(
-      "🚀 ~ getSingleTokenPrice ~ nativeTokenDetails:",
-      nativeTokenDetails
-    );
+    console.log("🚀 ~ getSingleTokenPrice ~ nativeTokenDetails:", nativeTokenDetails);
     if (!response) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -1169,9 +1186,7 @@ const mainswap = async (req, res) => {
       break;
   }
   try {
-    const userData =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
+    const userData = (chatId && (await getWalletInfo(chatId))) || (email && (await getWalletInfoByEmail(email)));
     console.log("🚀 ~ mainswap ~ userData:", userData);
     const poolAddress = await pooladress(token0, token1, chainId);
     if (poolAddress) {
@@ -1255,9 +1270,7 @@ async function startBot(req, res) {
 }
 // -------------------------------------------------- logout ------------------------------------
 async function logoutBotUser(req, res) {
-  console.log(
-    "------------------------- logout called -------------------------"
-  );
+  console.log("------------------------- logout called -------------------------");
   const { chatId } = req.body;
   console.log("🚀 ~ logoutBotUser ~ chatId:", chatId);
   const userLogout = await userModel.findOneAndUpdate(
@@ -1302,9 +1315,7 @@ async function logoutBotUser(req, res) {
 async function sendOtp(req, res) {
   try {
     const { chatId, email } = req.body;
-    const findUser =
-      (chatId && (await getWalletInfo(chatId))) ||
-      (email && (await getWalletInfoByEmail(email)));
+    const findUser = (chatId && (await getWalletInfo(chatId))) || (email && (await getWalletInfoByEmail(email)));
     const user = await userModel.findOne({ email: findUser?.email });
     if (!user) {
       return res.status(HTTP.SUCCESS).send({
@@ -1349,9 +1360,7 @@ async function getUserReferals(req, res) {
   try {
     const user = req.user?._id;
     console.log("🚀 ~ getUserReferals ~ user:", user);
-    const dataRef = await userModel
-      .find({ referred: user })
-      .select("name email");
+    const dataRef = await userModel.find({ referred: user }).select("name email");
     console.log("🚀 ~ getUserReferals ~ data:", dataRef);
     if (!dataRef) {
       return res.status(HTTP.SUCCESS).send({
@@ -1660,4 +1669,5 @@ module.exports = {
   mainswap,
   changePassword,
   //getWalletInfo,
+  checkData,
 };

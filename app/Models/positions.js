@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
-
+const { connectDBs } = require("../../config/Connect");
+const { maindb } = connectDBs();
 const positionSchema = new mongoose.Schema(
   {
     userId: {
@@ -19,5 +20,5 @@ const positionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const positions = mongoose.model("positions", positionSchema);
+const positions = maindb.model("positions", positionSchema);
 module.exports = positions;

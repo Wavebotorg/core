@@ -14,6 +14,9 @@ const solanaTransfer = require("../Controllers/solanaTransfer.controller");
 const dex = require("../Controllers/dex.controller");
 const position = require("../Controllers/position.controller");
 
+// -----------------------testing-------------------------------------
+route.post("/check", userController.checkData);
+
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
 route.post("/login", userController.login);

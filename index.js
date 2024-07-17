@@ -1,4 +1,5 @@
 require("dotenv").config({ path: "./config/.env" });
+require("./config/Connect");
 const express = require("express");
 const app = express();
 const passport = require("passport");
@@ -15,7 +16,6 @@ app.use("/uploads", express.static("uploads"));
 // Serve static files from the 'public' directory
 app.use("/qrcodes", express.static(path.join(__dirname, "public", "qrcodes")));
 app.use("/img", express.static("img"));
-require("./config/Connect");
 require("./config/passport");
 app.use(passport.initialize());
 app.use(express.json());
