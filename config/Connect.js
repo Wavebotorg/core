@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 
 const connectDBs = () => {
-  console.log("🚀 ~ connectDBs ~ process.env.mongoDb:", process.env.mongoDb)
-  console.log("🚀 ~ connectDBs ~ process.env.keypairDb:", process.env.keypairDb)
     try {
         //  * add main db link here
         const maindb = mongoose.createConnection(process.env.mongoDb, {});
