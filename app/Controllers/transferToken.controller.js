@@ -181,9 +181,9 @@ async function sendERC20Token(req, res) {
           console.log(
             "----------------------------execute transfer--------------------------"
           );
-          let finalTransfer =
-            Number(transferTokenokenBalance)?.toFixed(5) - 0.00001;
-          if (finalTransfer <= amount) {
+          let partAmount = transferTokenokenBalance?.toString()?.split(".");
+          let finalAmount = partAmount[0] + "." + partAmount[1]?.slice(0, 5);
+          if (finalAmount <= amount) {
             await positions.findOneAndDelete({ _id: positionToken?._id });
           }
         }
