@@ -367,7 +367,9 @@ async function solanaSwapping(req, res) {
           network: 19999,
         });
         if (positionInToken?.tokenAddress) {
-          if (inTokenBalance <= amount || Number(inTokenBalance).toFixed(3) <= amount || Number(inTokenBalance).toFixed(2) <= amount) {
+          let finalAmount = (inTokenBalance * 99.8) / 100;
+          console.log("🚀 ~ solanaSwapping ~ finalAmount:", finalAmount);
+          if (finalAmount <= amount) {
             await positions.findOneAndDelete({
               _id: positionInToken?._id,
             });
