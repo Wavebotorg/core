@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { connectDBs } = require("../../config/Connect");
+const { maindb } = connectDBs();
 
 const transferSchema = new mongoose.Schema(
   {
@@ -32,6 +34,6 @@ const transferSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const transfer = mongoose.model("transfer", transferSchema);
+const transfer = maindb.model("transfer", transferSchema);
 
 module.exports = transfer;

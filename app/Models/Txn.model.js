@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
+const { connectDBs } = require("../../config/Connect");
+const { maindb } = connectDBs();
 
+  
 const txnSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -19,6 +22,6 @@ const txnSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const Txn = mongoose.model('Txn', txnSchema);
+const Txn = maindb.model('Txn', txnSchema);
 
 module.exports = Txn;
