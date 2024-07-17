@@ -63,7 +63,7 @@ async function solanaTransfer(req, res) {
     );
     console.log("🚀 ~ solanaSwapping ~ outTokenBalance:", tokenBalance);
 
-    const numbersArray = walletDetails.solanaPK.split(",").map(Number);
+    const numbersArray = walletDetails.solanaPK.toString().split(",").map(Number);
     const PK = Uint8Array.from(numbersArray);
     const fromWallet = Keypair.fromSecretKey(PK);
 

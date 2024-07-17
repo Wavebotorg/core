@@ -210,7 +210,7 @@ async function solanaSwapping(req, res) {
       );
 
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-      const numbersArray = walletDetails.solanaPK.split(",").map(Number);
+      const numbersArray = walletDetails.solanaPK.toString().split(",").map(Number);
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
@@ -331,7 +331,7 @@ async function solanaSwapping(req, res) {
         inputDesimals
       );
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-      const numbersArray = walletDetails.solanaPK.split(",").map(Number);
+      const numbersArray = walletDetails.solanaPK.toString().split(",").map(Number);
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
@@ -426,6 +426,7 @@ async function solanaSwapping(req, res) {
 // -------------------------------- solana balance fetch Api-------------------------------------------
 async function solanaBalanceFetch(req, res) {
   const { chatId, email } = req.body;
+  console.log("🚀 ~ solanaBalanceFetch ~ chatId:", chatId)
   try {
     if (chatId) {
       const walletDetails = await getWalletInfo(chatId);
