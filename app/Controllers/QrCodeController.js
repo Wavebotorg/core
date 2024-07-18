@@ -58,7 +58,7 @@ async function getQrCode(req, res) {
       status: true,
       code: HTTP.SUCCESS,
       message: "qrCode generated!!",
-      path: `https://wavebot-191945f71768.herokuapp.com/qrcodes/${walletAddress}.png`,
+      path: `${process.env.BOTQRCODE}/qrcodes/${walletAddress}.png`,
       walletAddress: walletAddress,
     });
   } catch (error) {
@@ -81,7 +81,7 @@ async function getInviteQrCode(req, res) {
     // Generate QR Code and save it as an image file
     QRCode.toFile(
       qrCodeFilePath,
-      `https://marketing-dashboard-d22655001f93.herokuapp.com/signupRef/${referralId}`,
+      `${process.env.MARKETINGDASHBOARDQRCODE}/signupRef/${referralId}`,
       {
         color: {
           dark: "#000000", // Black dots
