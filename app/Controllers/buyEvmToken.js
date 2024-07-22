@@ -16,6 +16,7 @@ const { getTokenBalance } = require("../kibaSwap/getBalance");
 
 async function EVMBuyMain(req, res) {
   try {
+    console.log("----------------------- buy EVN run --------------------------------------->")
     const { tokenIn, tokenOut, chainId, amount, chain, email, chatId, method } =
       req.body;
     console.log("🚀 ~ EVMSwapMain ~ method:", method);
