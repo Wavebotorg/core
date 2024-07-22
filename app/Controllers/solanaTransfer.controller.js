@@ -7,6 +7,7 @@ const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
 const transfer = require("../Models/transfer");
 const positions = require("../Models/positions");
 const { getSoalanaTokenBalance } = require("../kibaSwap/getSolanabalance");
+const { solanaNativeTransfer } = require("./solNativeTransfer");
 const { PublicKey, Keypair, Connection, LAMPORTS_PER_SOL } = web3;
 
 async function solanaTransfer(req, res) {
@@ -67,122 +68,138 @@ async function solanaTransfer(req, res) {
     const PK = Uint8Array.from(numbersArray);
     const fromWallet = Keypair.fromSecretKey(PK);
 
-    // Check balance
-    const balance = await connection.getBalance(fromWallet.publicKey);
-    if (balance < 0.007 * LAMPORTS_PER_SOL) {
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.BAD_REQUEST,
-        message: "You must have at least 0.007 SOL (approximately $10)!!",
-      });
-    }
-
-    // Find decimals of the token
-    const tokenMint = new PublicKey(token);
-    const tokenAccountInfo = await spl.getMint(connection, tokenMint);
-    const decimals = tokenAccountInfo.decimals;
-    console.log("Decimals:", decimals);
-
-    // Convert amount to BigInt number
-    let part = amount?.toString()?.split(".")
-    let finalAmount= part[0]+"."+part[1]?.slice(0,5)
-    const amountIn = BigInt(Number(finalAmount) * Math.pow(10, decimals));   
-
-    // To wallet address
-    const destPublicKey = new PublicKey(toWallet);
-    console.log("🚀 ~ solanaTransfer ~ destPublicKey:", destPublicKey);
-
-    // Get or create associated token account for the sender's wallet
-    const fromTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
-      connection,
-      fromWallet,
-      tokenMint,
-      fromWallet.publicKey
-    );
-    console.log("🚀 ~ fromTokenAccount:", fromTokenAccount.address.toBase58());
-
-    // Get or create associated token account for the recipient's wallet
-    const toTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
-      connection,
-      fromWallet,
-      tokenMint,
-      destPublicKey
-    );
-    console.log("🚀 ~ toTokenAccount:", toTokenAccount.address.toBase58());
-
-    // Fetch a recent blockhash
-
-    // Create transaction
-    const transaction = new web3.Transaction({
-      feePayer: fromWallet.publicKey,
-    }).add(
-      spl.createTransferInstruction(
-        fromTokenAccount.address,
-        toTokenAccount.address,
-        fromWallet.publicKey,
-        amountIn,
-        [],
-        spl.TOKEN_PROGRAM_ID
-      )
-    );
-    const { blockhash } = await connection.getRecentBlockhash();
-    transaction.recentBlockhash = blockhash;
-
-    console.log("🚀 ~ solanaTransfer ~ transaction:", transaction);
-
-    // Sign transaction, broadcast, and confirm
-    const signature = await web3.sendAndConfirmTransaction(
-      connection,
-      transaction,
-      [fromWallet],
-      {
-        commitment: "confirmed",
-        preflightCommitment: "confirmed",
+    if (token == "So11111111111111111111111111111111111111112") {
+      console.log("----------------------- native transfer called --------------------------------");
+      const signature = await solanaNativeTransfer(toWallet,fromWallet,amount,connection)
+      console.log("🚀 ~ solanaTransfer ~ signature:", signature)
+      if (signature) {
+        await transfer.create({
+          userId: walletDetails?.id,
+          token,
+          toWallet,
+          network: 19999,
+          amount,
+          tx: signature,
+          dollar: Number(tokenInDollar.toFixed(5)),
+        });
+        return res.status(HTTP.SUCCESS).send({
+          status: true,
+          code: HTTP.SUCCESS,
+          message: "Transaction successful!!",
+          tx: signature,
+        });
+      } else {
+       throw new Error ("Transaction Fail, Make sure you have enough balance+gas!!")
       }
-    );
-    console.log("🚀 ~ solanaTransfer ~ signature:", signature);
+    } else {
+      console.log("----------------------- other tokens transfer called --------------------------------");
+      // Find decimals of the token
+      const tokenMint = new PublicKey(token);
+      const tokenAccountInfo = await spl.getMint(connection, tokenMint);
+      const decimals = tokenAccountInfo.decimals;
+      console.log("Decimals:", decimals);
 
-    if (!signature) {
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.BAD_REQUEST,
-        message: "🔴 Transaction failed, please try again later!!",
-      });
-    }
-    await transfer.create({
-      userId: walletDetails?.id,
-      token,
-      toWallet,
-      network: 19999,
-      amount,
-      tx: signature,
-      dollar: Number(tokenInDollar.toFixed(5)),
-    });
+      // Convert amount to BigInt number
+      let part = amount?.toString()?.split(".")
+      let finalAmount = part[0] + "." + part[1]?.slice(0, 5)
+      const amountIn = BigInt(Number(finalAmount) * Math.pow(10, decimals));
 
-    if (signature) {
-      const positionToken = await positions.findOne({
+      // To wallet address
+      const destPublicKey = new PublicKey(toWallet);
+      console.log("🚀 ~ solanaTransfer ~ destPublicKey:", destPublicKey);
+
+      // Get or create associated token account for the sender's wallet
+      const fromTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
+        connection,
+        fromWallet,
+        tokenMint,
+        fromWallet.publicKey
+      );
+      console.log("🚀 ~ fromTokenAccount:", fromTokenAccount.address.toBase58());
+
+      // Get or create associated token account for the recipient's wallet
+      const toTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
+        connection,
+        fromWallet,
+        tokenMint,
+        destPublicKey
+      );
+      console.log("🚀 ~ toTokenAccount:", toTokenAccount.address.toBase58());
+
+      // Fetch a recent blockhash
+
+      // Create transaction
+      const transaction = new web3.Transaction({
+        feePayer: fromWallet.publicKey,
+      }).add(
+        spl.createTransferInstruction(
+          fromTokenAccount.address,
+          toTokenAccount.address,
+          fromWallet.publicKey,
+          amountIn,
+          [],
+          spl.TOKEN_PROGRAM_ID
+        )
+      );
+      const { blockhash } = await connection.getRecentBlockhash();
+      transaction.recentBlockhash = blockhash;
+
+      console.log("🚀 ~ solanaTransfer ~ transaction:", transaction);
+
+      // Sign transaction, broadcast, and confirm
+      const signature = await web3.sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [fromWallet],
+        {
+          commitment: "confirmed",
+          preflightCommitment: "confirmed",
+        }
+      );
+      console.log("🚀 ~ solanaTransfer ~ signature:", signature);
+
+      if (!signature) {
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          message: "🔴 Transaction failed, please try again later!!",
+        });
+      }
+      await transfer.create({
         userId: walletDetails?.id,
-        tokenAddress: new RegExp(`^${token}$`, "i"),
+        token,
+        toWallet,
         network: 19999,
+        amount,
+        tx: signature,
+        dollar: Number(tokenInDollar.toFixed(5)),
       });
-      console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
-      if (token != "So11111111111111111111111111111111111111112") {
-        if (positionToken?.tokenAddress) {
-          console.log(
-            "---------------------------- execute sell --------------------------"
-          );
-          if (tokenBalance <= amount) {
-            await positions.findOneAndDelete({ _id: positionToken?._id });
+
+      if (signature) {
+        const positionToken = await positions.findOne({
+          userId: walletDetails?.id,
+          tokenAddress: new RegExp(`^${token}$`, "i"),
+          network: 19999,
+        });
+        console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+        if (token != "So11111111111111111111111111111111111111112") {
+          if (positionToken?.tokenAddress) {
+            console.log(
+              "---------------------------- execute sell --------------------------"
+            );
+            if (tokenBalance <= amount) {
+              await positions.findOneAndDelete({ _id: positionToken?._id });
+            }
           }
         }
       }
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        message: "Transaction successful!!",
+        tx: signature,
+      });
     }
-    return res.status(HTTP.SUCCESS).send({
-      status: true,
-      code: HTTP.SUCCESS,
-      message: "Transaction successful!!",
-      tx: signature,
-    });
   } catch (error) {
     console.log("🚀 ~ solanaTransfer ~ error:", error?.message);
     return res.status(HTTP.SUCCESS).send({
