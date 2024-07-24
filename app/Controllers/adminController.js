@@ -674,6 +674,7 @@ async function usertransaction(req, res) {
         break;
     }
     if (method == "transfer") {
+      const user = await userModel.find({ _id: userId }).select("name email");
       const transactions = await transfer
         .find({
           userId: userId,
@@ -686,15 +687,16 @@ async function usertransaction(req, res) {
           "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"
         );
       }
-
       return res.status(HTTP.SUCCESS).send({
         status: true,
         code: HTTP.SUCCESS,
         msg: "EVM transactions fetch!!",
+        userDetails: user,
         transactions,
         networkName,
       });
     } else {
+      const user = await userModel.find({ _id: userId }).select("name email");
       const transactions = await TxnEvm.find({
         userId: userId,
         chainId,
@@ -711,6 +713,7 @@ async function usertransaction(req, res) {
         status: true,
         code: HTTP.SUCCESS,
         msg: "EVM transactions fetch!!",
+        userDetails: user,
         transactions,
       });
     }
@@ -781,8 +784,83 @@ async function getVolume(req, res) {
     });
   }
 }
+const getDailyVolumeBynetwork = async (req, res) => {
+  try {
+    const userdata = await userModel.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+          },
+          userCount: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    const transactionData = await TxnEvm.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+          },
+
+          totalBuyDollar: {
+            $sum: {
+              $cond: [{ $eq: ["$method", "Buy"] }, "$dollar", 0],
+            },
+          },
+          totalSellDollar: {
+            $sum: {
+              $cond: [{ $eq: ["$method", "sell"] }, "$dollar", 0],
+            },
+          },
+          buyCount: {
+            $sum: {
+              $cond: [{ $eq: ["$method", "Buy"] }, 1, 0],
+            },
+          },
+          sellCount: {
+            $sum: {
+              $cond: [{ $eq: ["$method", "sell"] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    const combinedData = userdata.map((user) => {
+      const transaction = transactionData.find((t) => t._id == user._id) || {};
+      return {
+        date: user._id,
+        userCount: user?.userCount || 0,
+        totalBuyDollar: transaction?.totalBuyDollar
+          ? Number(Number(transaction.totalBuyDollar).toFixed())
+          : 0,
+        totalSellDollar: transaction?.totalSellDollar
+          ? Number(Number(transaction.totalSellDollar).toFixed())
+          : 0,
+        totalBuyCount: transaction?.buyCount || 0,
+        totalSellCount: transaction?.sellCount || 0,
+      };
+    });
+
+    res.send(combinedData);
+  } catch (error) {
+    console.log("Error:", error.message);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
+};
 
 module.exports = {
+  getDailyVolumeBynetwork,
   login,
   getUpdateProfile,
   updateProfile,

@@ -71,13 +71,14 @@ router.get(
   authadmin,
   transactions.totalTransactionCount
 );
-
+//  daily reports like transaction and all that
+router.get("/getVolume", authadmin, adminController.getDailyVolumeBynetwork);
 // //get solana transaction count
 // router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);
 
 // // get evm transactions count
 // router.get("/evmCount", authadmin, transactions.evmTransactionsCount);
 
-//  total transaction count by selection chain 
+//  total transaction count by selection chain
 router.post("/getTransfers", authadmin, transactions.getTransfersData);
 module.exports = router;

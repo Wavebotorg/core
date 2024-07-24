@@ -167,7 +167,7 @@ async function positionsListForSolana(req, res) {
     // step 1 convert all token balances into map
     const map = new Map();
     response?.raw?.tokens?.forEach((item) => map.set(item?.mint, item));
-
+// console.log("-------------------------->",map)
     // find all tokens price
     let allTokenPrice = await Promise.all(
       dataBaseTokens?.map(async (item) => {
@@ -218,7 +218,7 @@ async function positionsListForSolana(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-
+console.log("----------->",allTokenPrice)
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
