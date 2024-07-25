@@ -168,8 +168,9 @@ async function EVMBuyMain(req, res) {
       dollar: Number(amountInDollar.toFixed(5)),
     });
     if (executeSwapTxReceipt?.transactionHash) {
+      const networkName = chainId =="ethereum"?"ether":chainId
       const outTokenCurrentPrice = await axios({
-        url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenOut}/price`,
+        url: `https://public-api.dextools.io/standard/v2/token/${networkName}/${tokenOut}/price`,
         method: "get",
         headers: {
           accept: "application/json",

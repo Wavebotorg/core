@@ -32,9 +32,9 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
-
+    const networkName = chainId == "ethereum" ? "ether" : chainId
     const price = await axios({
-      url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenIn}/price`,
+      url: `https://public-api.dextools.io/standard/v2/token/${networkName}/${tokenIn}/price`,
       method: "get",
       headers: {
         accept: "application/json",
@@ -42,7 +42,6 @@ async function EVMSwapMain(req, res) {
       },
     });
     let amountInDollar = price?.data?.data?.price * amount;
-    ``;
     console.log("🚀 ~ EVMSwapMain ~ amountInDollar:", amountInDollar);
     const provider = getProvider(chain, chainId);
     // find wallet details

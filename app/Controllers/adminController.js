@@ -859,7 +859,117 @@ const getDailyVolumeBynetwork = async (req, res) => {
   }
 };
 
+const getVolumeBynetwork = async (req, res) => {
+  const { network } = req.body;
+  try {
+    // First, aggregate transaction data by date and network
+    const transactionData = await TxnEvm.aggregate([
+      {
+        $match: {
+          network: network,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+          },
+          totalBuyDollar: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }] },
+                "$dollar",
+                0,
+              ],
+            },
+          },
+          totalSellDollar: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }] },
+                "$dollar",
+                0,
+              ],
+            },
+          },
+          buyCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          sellCount: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Then, aggregate user data by date
+    const userdata = await userModel.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+          },
+          userCount: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Create a set of all unique dates
+    const allDates = new Set([
+      ...userdata.map((user) => user._id),
+      ...transactionData.map((txn) => txn._id),
+    ]);
+
+    // Combine data based on all unique dates
+    const combinedData = Array.from(allDates).map((date) => {
+      const user = userdata.find((u) => u._id === date) || {};
+      const transaction = transactionData.find((t) => t._id === date) || {};
+      return {
+        date: date,
+        userCount: user.userCount || 0,
+        totalBuyDollar: transaction?.totalBuyDollar
+          ? Number(Number(transaction?.totalBuyDollar).toFixed())
+          : 0,
+        totalSellDollar: transaction?.totalSellDollar
+          ? Number(Number(transaction?.totalSellDollar).toFixed())
+          : 0,
+        totalTrades: (transaction?.buyCount || 0) + (transaction?.sellCount || 0),
+        totalVolume: Number(Number(transaction?.totalBuyDollar + transaction?.totalSellDollar).toFixed()) || 0
+      };
+    });
+
+    res.send(combinedData);
+  } catch (error) {
+    console.log("Error:", error.message);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something went wrong!",
+      data: {},
+    });
+  }
+};
+
 module.exports = {
+  getVolumeBynetwork,
   getDailyVolumeBynetwork,
   login,
   getUpdateProfile,

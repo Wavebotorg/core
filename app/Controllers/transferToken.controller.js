@@ -197,23 +197,27 @@ async function sendERC20Token(req, res) {
       });
     } else if (token == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
       console.log("called!!");
-      
+
       const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice(
         {
           chain: chain,
           address: walletDetails?.wallet,
         }
       );
-      const usdPrice = response?.raw()?.result[0]?.usd_price
-      console.log("🚀 ~ sendERC20Token ~ usdPrice:", usdPrice)
-      const amountDollar= amount * usdPrice
+      const usdPrice = response?.raw()?.result[0]?.usd_price;
+      console.log("🚀 ~ sendERC20Token ~ usdPrice:", usdPrice);
+      const amountDollar = amount * usdPrice;
       const amountInWei = ethers.utils.parseEther(amount?.toString());
+      console.log("🚀 ~ sendERC20Token ~ amountInWei:", amountInWei)
 
       // Get current gas price
       const gasPrice = await provider.getGasPrice();
+      console.log("🚀 ~ sendERC20Token ~ gasPrice:", gasPrice);
+      const mulGas = gasPrice * 5;
+      console.log("🚀 ~ sendERC20Token ~ mulGas:",amountInWei- mulGas)
       const tx = {
         to: toWallet,
-        value: amountInWei,
+        value: amountInWei - mulGas,
         gasPrice: gasPrice,
       };
 
@@ -233,7 +237,7 @@ async function sendERC20Token(req, res) {
             dollar: Number(amountDollar.toFixed(5)),
           });
           console.log("database saved!!!");
-          
+
           return res.status(HTTP.SUCCESS).send({
             status: true,
             code: HTTP.SUCCESS,
@@ -244,6 +248,11 @@ async function sendERC20Token(req, res) {
         }
       } catch (error) {
         console.error("Error sending transaction:", error?.message);
+        return res.status(HTTP.SUCCESS).send({
+          status: false,
+          code: HTTP.BAD_REQUEST,
+          message: "Transaction failed please try again letter!!",
+        });
       }
     }
   } catch (error) {

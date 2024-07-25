@@ -81,4 +81,7 @@ router.get("/getVolume", authadmin, adminController.getDailyVolumeBynetwork);
 
 //  total transaction count by selection chain
 router.post("/getTransfers", authadmin, transactions.getTransfersData);
+
+//  get daily transactions
+router.post("/getVolume", authadmin, adminController.getVolumeBynetwork);
 module.exports = router;
