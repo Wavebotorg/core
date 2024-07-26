@@ -237,8 +237,9 @@ async function EVMSwapMain(req, res) {
           network: chain,
         });
         console.log("🚀 ~ EVMSwapMain ~ positionOutToken:", positionOutToken);
+        const networkNameOut = chainId == "ethereum" ? "ether" : chainId
         const outTokenCurrentPrice = await axios({
-          url: `https://public-api.dextools.io/standard/v2/token/${chainId}/${tokenOut}/price`,
+          url: `https://public-api.dextools.io/standard/v2/token/${networkNameOut}/${tokenOut}/price`,
           method: "get",
           headers: {
             accept: "application/json",
