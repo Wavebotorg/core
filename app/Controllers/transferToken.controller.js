@@ -207,22 +207,43 @@ async function sendERC20Token(req, res) {
       const usdPrice = response?.raw()?.result[0]?.usd_price;
       console.log("🚀 ~ sendERC20Token ~ usdPrice:", usdPrice);
       const amountDollar = amount * usdPrice;
-      const amountInWei = ethers.utils.parseEther(amount?.toString());
-      console.log("🚀 ~ sendERC20Token ~ amountInWei:", amountInWei)
+
+      //  get account balance
+      const balanceOfAcc = await provider.getBalance(walletDetails?.wallet);
+      const finalTotalBalanceOfAcc = ethers.utils.formatEther(balanceOfAcc);
+      console.log(
+        "🚀 ~ sendERC20Token ~ finalTotalBalanceOfAcc:",
+        finalTotalBalanceOfAcc
+      );
+
+      let amountOfTra;
+      let partAmount = finalTotalBalanceOfAcc?.toString()?.split(".");
+      let finalAmount = partAmount[0] + "." + partAmount[1]?.slice(0, 5);
+      if (amount == finalAmount) {
+        console.log("------------- exact amount ---------------------");
+        console.log("🚀 ~ sendERC20Token ~ finalAmount:", finalAmount)
+        console.log("🚀 ~ sendERC20Token ~ amount:", amount)
+        amountOfTra = (amount * 99.9) / 100;
+        console.log("🚀 ~ sendERC20Token ~ amountOfTra:", amountOfTra)
+      } else {
+        console.log("------------- not exact amount ---------------------");
+        amountOfTra = amount;
+        console.log("🚀 ~ sendERC20Token ~ amountOfTra:", amountOfTra)
+      }
+      const amountInWei = ethers.utils.parseEther(amountOfTra?.toString());
+      console.log("🚀 ~ sendERC20Token ~ amountInWei:", amountInWei);
 
       // Get current gas price
       const gasPrice = await provider.getGasPrice();
       console.log("🚀 ~ sendERC20Token ~ gasPrice:", gasPrice);
-      const mulGas = gasPrice * 5;
-      console.log("🚀 ~ sendERC20Token ~ mulGas:",amountInWei- mulGas)
       const tx = {
         to: toWallet,
-        value: amountInWei - mulGas,
+        value: amountInWei,
         gasPrice: gasPrice,
       };
 
       try {
-        const transaction = await wallet.sendTransaction(tx);
+        const transaction = await wallet.sendTransaction(tx); 
         console.log(`Transaction hash: ${transaction?.hash}`);
         await transaction.wait();
         console.log("Transaction confirmed");
