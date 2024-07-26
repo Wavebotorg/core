@@ -232,10 +232,12 @@ const showUser = async (req, res) => {
   try {
     const { id } = req.params;
     let userData = await userModel
-      .find({ _id: id, role: "user" }).populate({
+      .find({ _id: id, role: "user" })
+      .populate({
         path: "referred",
-        select:"name email _id"
-      }).select("-password -otp -role -hashedPrivateKey -solanaPK");
+        select: "name email _id",
+      })
+      .select("-password -otp -role -hashedPrivateKey -solanaPK");
     if (!userData || userData.length === 0) {
       return res
         .status(HTTP.SUCCESS)
@@ -784,80 +786,6 @@ async function getVolume(req, res) {
     });
   }
 }
-const getDailyVolumeBynetwork = async (req, res) => {
-  try {
-    const userdata = await userModel.aggregate([
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
-          },
-          userCount: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
-
-    const transactionData = await TxnEvm.aggregate([
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
-          },
-
-          totalBuyDollar: {
-            $sum: {
-              $cond: [{ $eq: ["$method", "Buy"] }, "$dollar", 0],
-            },
-          },
-          totalSellDollar: {
-            $sum: {
-              $cond: [{ $eq: ["$method", "sell"] }, "$dollar", 0],
-            },
-          },
-          buyCount: {
-            $sum: {
-              $cond: [{ $eq: ["$method", "Buy"] }, 1, 0],
-            },
-          },
-          sellCount: {
-            $sum: {
-              $cond: [{ $eq: ["$method", "sell"] }, 1, 0],
-            },
-          },
-        },
-      },
-    ]);
-
-    const combinedData = userdata.map((user) => {
-      const transaction = transactionData.find((t) => t._id == user._id) || {};
-      return {
-        date: user._id,
-        userCount: user?.userCount || 0,
-        totalBuyDollar: transaction?.totalBuyDollar
-          ? Number(Number(transaction.totalBuyDollar).toFixed())
-          : 0,
-        totalSellDollar: transaction?.totalSellDollar
-          ? Number(Number(transaction.totalSellDollar).toFixed())
-          : 0,
-        totalBuyCount: transaction?.buyCount || 0,
-        totalSellCount: transaction?.sellCount || 0,
-      };
-    });
-
-    res.send(combinedData);
-  } catch (error) {
-    console.log("Error:", error.message);
-    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
-      status: false,
-      code: HTTP.INTERNAL_SERVER_ERROR,
-      msg: "Something went wrong!",
-      data: {},
-    });
-  }
-};
 
 const getVolumeBynetwork = async (req, res) => {
   const { network } = req.body;
@@ -872,12 +800,17 @@ const getVolumeBynetwork = async (req, res) => {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
           },
           totalBuyDollar: {
             $sum: {
               $cond: [
-                { $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }] },
+                {
+                  $and: [
+                    { $eq: ["$method", "buy"] },
+                    { $eq: ["$network", network] },
+                  ],
+                },
                 "$dollar",
                 0,
               ],
@@ -886,7 +819,12 @@ const getVolumeBynetwork = async (req, res) => {
           totalSellDollar: {
             $sum: {
               $cond: [
-                { $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }] },
+                {
+                  $and: [
+                    { $eq: ["$method", "sell"] },
+                    { $eq: ["$network", network] },
+                  ],
+                },
                 "$dollar",
                 0,
               ],
@@ -895,7 +833,12 @@ const getVolumeBynetwork = async (req, res) => {
           buyCount: {
             $sum: {
               $cond: [
-                { $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }] },
+                {
+                  $and: [
+                    { $eq: ["$method", "buy"] },
+                    { $eq: ["$network", network] },
+                  ],
+                },
                 1,
                 0,
               ],
@@ -904,7 +847,12 @@ const getVolumeBynetwork = async (req, res) => {
           sellCount: {
             $sum: {
               $cond: [
-                { $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }] },
+                {
+                  $and: [
+                    { $eq: ["$method", "sell"] },
+                    { $eq: ["$network", network] },
+                  ],
+                },
                 1,
                 0,
               ],
@@ -913,7 +861,7 @@ const getVolumeBynetwork = async (req, res) => {
         },
       },
       {
-        $sort: { _id: 1 },
+        $sort: { _id: -1 },
       },
     ]);
 
@@ -922,13 +870,10 @@ const getVolumeBynetwork = async (req, res) => {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%d-%m-%Y", date: "$createdAt" },
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
           },
           userCount: { $sum: 1 },
         },
-      },
-      {
-        $sort: { _id: 1 },
       },
     ]);
 
@@ -951,15 +896,26 @@ const getVolumeBynetwork = async (req, res) => {
         totalSellDollar: transaction?.totalSellDollar
           ? Number(Number(transaction?.totalSellDollar).toFixed())
           : 0,
-        totalTrades: (transaction?.buyCount || 0) + (transaction?.sellCount || 0),
-        totalVolume: Number(Number(transaction?.totalBuyDollar + transaction?.totalSellDollar).toFixed()) || 0
+        totalTrades:
+          (transaction?.buyCount || 0) + (transaction?.sellCount || 0),
+        totalVolume:
+          Number(
+            Number(
+              transaction?.totalBuyDollar + transaction?.totalSellDollar
+            ).toFixed()
+          ) || 0,
       };
     });
-
-    res.send(combinedData);
+    await combinedData.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "Something went wrong!",
+      data: combinedData,
+    });
   } catch (error) {
     console.log("Error:", error.message);
-    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
+    return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
       msg: "Something went wrong!",
@@ -970,7 +926,6 @@ const getVolumeBynetwork = async (req, res) => {
 
 module.exports = {
   getVolumeBynetwork,
-  getDailyVolumeBynetwork,
   login,
   getUpdateProfile,
   updateProfile,

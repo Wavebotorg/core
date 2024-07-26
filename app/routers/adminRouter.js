@@ -72,7 +72,7 @@ router.get(
   transactions.totalTransactionCount
 );
 //  daily reports like transaction and all that
-router.get("/getVolume", authadmin, adminController.getDailyVolumeBynetwork);
+// router.get("/getVolume", authadmin, adminController.getDailyVolumeBynetwork);
 // //get solana transaction count
 // router.get("/solanaCount", authadmin, transactions.solanaTransactionsCount);
 
