@@ -223,7 +223,10 @@ async function sendERC20Token(req, res) {
         console.log("------------- exact amount ---------------------");
         console.log("🚀 ~ sendERC20Token ~ finalAmount:", finalAmount)
         console.log("🚀 ~ sendERC20Token ~ amount:", amount)
-        amountOfTra = (amount * 99.9) / 100;
+        let fristAmt = (amount * 99.9) / 100
+        let partAmountIn = fristAmt?.toString()?.split(".");
+        let finalAmountIn = partAmountIn[0] + "." + partAmountIn[1]?.slice(0, 5);
+        amountOfTra = finalAmountIn;
         console.log("🚀 ~ sendERC20Token ~ amountOfTra:", amountOfTra)
       } else {
         console.log("------------- not exact amount ---------------------");

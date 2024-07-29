@@ -15,7 +15,7 @@ const dex = require("../Controllers/dex.controller");
 const position = require("../Controllers/position.controller");
 
 // -----------------------testing-------------------------------------
-route.post("/check", userController.checkData);
+// route.post("/check", userController.checkData);
 
 //================================= User Controllers ================================
 route.post("/signup", userController.signUp);
@@ -44,8 +44,10 @@ route.post(
   "/getSolanaSingleTokenPrice",
   userController.getSolanaSingleTokenPrice
 );
-route.get("/leaderBoardList", authuser, userController.leaderboard);
-route.get("/transactionBoardList", authuser, userController.transactionBoard);
+
+// ---------------------- leader boards -------------------------------
+route.get("/leaderBoardList", userController.leaderboard);
+route.get("/transactionBoardList", userController.transactionBoard);
 
 route.post("/balance", authuser, coinController.addbalance);
 route.post("/buyCoin", authuser, coinController.buy);
