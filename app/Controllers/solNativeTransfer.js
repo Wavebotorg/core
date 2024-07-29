@@ -14,7 +14,6 @@ async function solanaNativeTransfer(
       "🚀 ~ solanaTransfer ~ destPublicKey:",
       destPublicKey.toBase58()
     );
-
     // Check balance in the sender's wallet
     const balance = await connection.getBalance(fromWallet.publicKey);
     console.log("Balance:", balance / web3.LAMPORTS_PER_SOL, "SOL");
@@ -23,7 +22,7 @@ async function solanaNativeTransfer(
 
     // Get recent blockhash and calculate transaction fees
     const { feeCalculator } = await connection.getRecentBlockhash();
-    const transactionFee = feeCalculator.lamportsPerSignature * 200; // Assuming 2 signatures (one for the transaction and one for the recent blockhash)
+    const transactionFee = feeCalculator.lamportsPerSignature * 200; 
     console.log("🚀 ~ solanaTransfer ~ transactionFee:", transactionFee);
 
     let finalAmount;
@@ -31,11 +30,21 @@ async function solanaNativeTransfer(
     if (balance === transferAmountInLamports) {
       // If balance is equal to the amount to transfer
       console.log("Exact amount!!");
-      finalAmount = transferAmountInLamports - transactionFee;
+      // let part = transferAmountInSOL?.toString()?.split(".");
+      // let finalAmountSplit = part[0] + "." + part[1]?.slice(0, 5);
+      // const transferAmount =
+      //   finalAmountSplit * web3.LAMPORTS_PER_SOL;
+      const semiFinalAmount = transferAmountInLamports - transactionFee;
+      finalAmount = semiFinalAmount;
       console.log("🚀 ~ solanaTransfer ~ finalAmount:", finalAmount);
     } else {
       console.log("Not exact amount!!");
-      finalAmount = transferAmountInLamports;
+      let part = transferAmountInSOL?.toString()?.split(".");
+      let finalAmountSplit = part[0] + "." + part[1]?.slice(0, 5);
+      const transferAmount =
+        finalAmountSplit * web3.LAMPORTS_PER_SOL;
+      finalAmount = transferAmount;
+      console.log("🚀 ~ finalAmount:", finalAmount)
     }
 
     // Create transaction
