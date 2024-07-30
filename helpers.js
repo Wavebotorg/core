@@ -127,6 +127,7 @@ exports.getWalletInfoByEmail = async (email) => {
       solanawallet: user?.solanawallet,
       btcPk,
       btcAddress: user?.btcWallet,
+      referralId: user?.referralId,
     };
   } catch (error) {
     console.error("Error fetching wallet information from the database:", error.message);

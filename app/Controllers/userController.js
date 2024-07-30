@@ -5,8 +5,7 @@ const { default: Moralis } = require("moralis");
 const axios = require("axios");
 const userModel = require("../Models/userModel");
 const ethers = require("ethers");
-// import bs58 from "bs58";
-// import { Keypair } from "@solana/web3.js";
+const moment = require("moment-timezone");
 const { Keypair } = require("@solana/web3.js");
 const bs58 = require("bs58");
 const { ObjectId } = require("mongodb");
@@ -43,14 +42,12 @@ const checkData = async (req, res) => {
     return res.status(HTTP.SUCCESS).send({ msg: "slay", data });
   } catch (error) {
     console.log("🚀 ~ checkData ~ error:", error);
-    return res
-      .status(HTTP.SUCCESS)
-      .send({
-        status: false,
-        code: HTTP.INTERNAL_SERVER_ERROR,
-        msg: "Something Went Wrong",
-        error: error.message,
-      });
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something Went Wrong",
+      error: error.message,
+    });
   }
 };
 
@@ -1648,79 +1645,108 @@ async function leaderboard(req, res) {
 
 async function transactionBoard(req, res) {
   try {
-    const userTransactionCount = await TxnEvm.aggregate([
-      {
-        $group: {
-          _id: "$userId",
-          totalTransaction: { $sum: 1 },
-          totalTransferToken: { $sum: "$dollar" },
-        },
-      },
-      {
-        $unionWith: {
-          coll: "transfers",
-          pipeline: [
-            {
-              $group: {
-                _id: "$userId",
-                totalTransaction: { $sum: 1 },
-                totalTransferToken: { $sum: "$dollar" },
-              },
-            },
-          ],
-        },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          totalTransaction: { $sum: "$totalTransaction" },
-          totalTransferToken: { $sum: "$totalTransferToken" },
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "userDetails",
-        },
-      },
-      {
-        $unwind: "$userDetails",
-      },
-      {
-        $project: {
-          _id: 1,
-          name: "$userDetails.name",
-          email: "$userDetails.email",
-          totalTransaction: 1,
-          totalTransferToken: 1,
-        },
-      },
-      {
-        $sort: { totalTransferToken: -1 },
-      },
-    ]);
+    const now = await new Date();
+    const startOfToday = moment.tz(now, "UTC").startOf("day").toDate();
+    console.log("🚀 ~ transactionBoard ~ startOfToday:", startOfToday);
+    const lastWeek = moment
+      .tz(now, "UTC")
+      .subtract(7, "days")
+      .startOf("day")
+      .toDate();
+    const lastMonth = moment
+      .tz(now, "UTC")
+      .subtract(1, "months")
+      .startOf("day")
+      .toDate();
 
-    if (!userTransactionCount) {
-      return res.status(HTTP.SUCCESS).send({
-        status: false,
-        code: HTTP.INTERNAL_SERVER_ERROR,
-        msg: "Something has been wrong!!",
-        data: {},
-      });
+    async function getTransactionData(startDate) {
+      return await TxnEvm.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate },
+          },
+        },
+        {
+          $group: {
+            _id: "$userId",
+            totalTransaction: { $sum: 1 },
+            totalTransferToken: { $sum: "$dollar" },
+          },
+        },
+        {
+          $unionWith: {
+            coll: "transfers",
+            pipeline: [
+              {
+                $match: {
+                  createdAt: { $gte: startDate },
+                },
+              },
+              {
+                $group: {
+                  _id: "$userId",
+                  totalTransaction: { $sum: 1 },
+                  totalTransferToken: { $sum: "$dollar" },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            totalTransaction: { $sum: "$totalTransaction" },
+            totalTransferToken: { $sum: "$totalTransferToken" },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $unwind: "$userDetails",
+        },
+        {
+          $project: {
+            _id: 1,
+            name: "$userDetails.name",
+            email: "$userDetails.email",
+            totalTransaction: 1,
+            totalTransferToken: 1,
+          },
+        },
+        {
+          $sort: { totalTransferToken: -1 },
+        },
+        { $limit: 50 },
+      ]);
     }
+
+    const allTimeTransaction = await getTransactionData(new Date(0));
+    const dailyTransaction = await getTransactionData(startOfToday);
+    const weeklyTransaction = await getTransactionData(lastWeek);
+    const monthlyTransaction = await getTransactionData(lastMonth);
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "transaction leaderboard!!",
-      userTransactionCount,
+      msg: "Transaction leaderboard!!",
+      data: {
+        daily: dailyTransaction,
+        weekly: weeklyTransaction,
+        monthly: monthlyTransaction,
+        allTime: allTimeTransaction,
+      },
     });
   } catch (error) {
-    return res.status(HTTP.SUCCESS).send({
+    console.log("🚀 ~ transactionBoard ~ error:", error?.message);
+    return res.status(HTTP.INTERNAL_SERVER_ERROR).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
-      msg: "Something has been wrong!!",
+      msg: "Something has gone wrong!!",
       data: {},
     });
   }
@@ -1749,6 +1775,86 @@ async function checkReferral(req, res) {
     name: user?.name,
   });
 }
+
+// user frist level referral
+
+async function userFristReferral(req, res) {
+  try {
+    const { chatId, email } = req.body;
+    if (!chatId && !email) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "chatId required!!",
+        data: {},
+      });
+    }
+    const findUser =
+      (chatId && (await getWalletInfo(chatId))) ||
+      (email && (await getWalletInfoByEmail(email)));
+
+    if (!findUser) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "User not found!!",
+        data: {},
+      });
+    }
+    const userRef = await userModel
+      .find({
+        referred: findUser?.id,
+      })
+      .countDocuments();
+    const userTotalTradedValue = await TxnEvm.aggregate([
+      {
+        $match: { userId: findUser?.id },
+      },
+      {
+        $group: {
+          _id: "$userId",
+          totalTradeValue: { $sum: "$dollar" },
+        },
+      },
+      {
+        $unionWith: {
+          coll: "transfers",
+          pipeline: [
+            {
+              $match: { userId: findUser?.id },
+            },
+            {
+              $group: {
+                _id: "$userId",
+                totalTradeValue: { $sum: "$dollar" },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          totalTradedvalue: { $sum: "$totalTradeValue" }
+        }
+      }
+    ]);
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: "fetched!!",
+      data: { refferalCount: userRef, totalTradeValue: userTotalTradedValue[0]?.totalTradedvalue },
+    });
+  } catch (error) {
+    console.log("🚀 ~ userFristReferral ~ error:", error?.message)
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something has gone wrong!!",
+      data: {},
+    });
+  }
+}
 module.exports = {
   transactionBoard,
   leaderboard,
@@ -1757,6 +1863,7 @@ module.exports = {
   getUserReferals,
   logoutBotUser,
   startBot,
+  userFristReferral,
   signUp,
   login,
   verify,

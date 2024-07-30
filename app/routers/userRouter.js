@@ -31,8 +31,6 @@ route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
-route.post("/getUserReferals", userController.getReferrals);
-route.post("/checkReferral", userController.checkReferral);
 route.post(
   "/removeCoinWatchlist",
   authuser,
@@ -44,6 +42,12 @@ route.post(
   "/getSolanaSingleTokenPrice",
   userController.getSolanaSingleTokenPrice
 );
+
+// ---------------------- referrals apis -------------------------------
+route.post("/getUserReferals", userController.getReferrals);
+route.post("/checkReferral", userController.checkReferral);
+route.post("/fristLevelReferral", userController.userFristReferral);
+
 
 // ---------------------- leader boards -------------------------------
 route.get("/leaderBoardList", userController.leaderboard);
