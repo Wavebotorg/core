@@ -789,7 +789,92 @@ async function getVolume(req, res) {
 
 const getVolumeBynetwork = async (req, res) => {
   const { network } = req.body;
+  console.log("🚀 ~ getVolumeBynetwork ~ req.body:", req.body);
   try {
+    if (network === null || !network)
+      return res.status(HTTP.SUCCESS).json({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "Invalid Data",
+      });
+
+    if (network === "all") {
+      let transactionData = await TxnEvm.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalBuyDollar: {
+              $sum: {
+                $cond: [
+                  {
+                    $eq: ["$method", "buy"],
+                  },
+                  "$dollar",
+                  0,
+                ],
+              },
+            },
+            totalSellDollar: {
+              $sum: {
+                $cond: [
+                  {
+                    $eq: ["$method", "sell"],
+                  },
+                  "$dollar",
+                  0,
+                ],
+              },
+            },
+            buyCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $eq: ["$method", "buy"],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            sellCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $eq: ["$method", "sell"],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]);
+
+      // const result = await TxnEvm.aggregate([{ $group: { _id: "$userId" } }, { $count: "distinctUserCount" }]);
+      // const userCount = result.length > 0 ? result[0].distinctUserCount : 0;
+      const userCount = await userModel.countDocuments({});
+
+      const combinedData = transactionData.map((data) => {
+        return {
+          date: "Till Date",
+          key: "all",
+          userCount,
+          totalBuyDollar: data?.totalBuyDollar ? Number(data?.totalBuyDollar.toFixed()) : 0,
+          totalSellDollar: data?.totalSellDollar ? Number(data?.totalSellDollar.toFixed()) : 0,
+          totalTrades: (data?.buyCount || 0) + (data?.sellCount || 0),
+          totalVolume: Number(Number(data?.totalBuyDollar + data?.totalSellDollar).toFixed()) || 0,
+        };
+      });
+
+      return res.status(HTTP.SUCCESS).send({
+        status: true,
+        code: HTTP.SUCCESS,
+        msg: "All Data",
+        data: combinedData,
+      });
+    }
+
     // First, aggregate transaction data by date and network
     const transactionData = await TxnEvm.aggregate([
       {
@@ -806,10 +891,7 @@ const getVolumeBynetwork = async (req, res) => {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ["$method", "buy"] },
-                    { $eq: ["$network", network] },
-                  ],
+                  $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
                 },
                 "$dollar",
                 0,
@@ -820,10 +902,7 @@ const getVolumeBynetwork = async (req, res) => {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ["$method", "sell"] },
-                    { $eq: ["$network", network] },
-                  ],
+                  $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
                 },
                 "$dollar",
                 0,
@@ -834,10 +913,7 @@ const getVolumeBynetwork = async (req, res) => {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ["$method", "buy"] },
-                    { $eq: ["$network", network] },
-                  ],
+                  $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
                 },
                 1,
                 0,
@@ -848,10 +924,7 @@ const getVolumeBynetwork = async (req, res) => {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ["$method", "sell"] },
-                    { $eq: ["$network", network] },
-                  ],
+                  $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
                 },
                 1,
                 0,
@@ -878,10 +951,7 @@ const getVolumeBynetwork = async (req, res) => {
     ]);
 
     // Create a set of all unique dates
-    const allDates = new Set([
-      ...userdata.map((user) => user._id),
-      ...transactionData.map((txn) => txn._id),
-    ]);
+    const allDates = new Set([...userdata.map((user) => user._id), ...transactionData.map((txn) => txn._id)]);
 
     // Combine data based on all unique dates
     const combinedData = Array.from(allDates).map((date) => {
@@ -890,27 +960,17 @@ const getVolumeBynetwork = async (req, res) => {
       return {
         date: date,
         userCount: user.userCount || 0,
-        totalBuyDollar: transaction?.totalBuyDollar
-          ? Number(Number(transaction?.totalBuyDollar).toFixed())
-          : 0,
-        totalSellDollar: transaction?.totalSellDollar
-          ? Number(Number(transaction?.totalSellDollar).toFixed())
-          : 0,
-        totalTrades:
-          (transaction?.buyCount || 0) + (transaction?.sellCount || 0),
-        totalVolume:
-          Number(
-            Number(
-              transaction?.totalBuyDollar + transaction?.totalSellDollar
-            ).toFixed()
-          ) || 0,
+        totalBuyDollar: transaction?.totalBuyDollar ? Number(Number(transaction?.totalBuyDollar).toFixed()) : 0,
+        totalSellDollar: transaction?.totalSellDollar ? Number(Number(transaction?.totalSellDollar).toFixed()) : 0,
+        totalTrades: (transaction?.buyCount || 0) + (transaction?.sellCount || 0),
+        totalVolume: Number(Number(transaction?.totalBuyDollar + transaction?.totalSellDollar).toFixed()) || 0,
       };
     });
     await combinedData.sort((a, b) => new Date(b.date) - new Date(a.date));
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
-      msg: "Something went wrong!",
+      msg: "Data By Network",
       data: combinedData,
     });
   } catch (error) {
