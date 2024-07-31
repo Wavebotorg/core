@@ -48,7 +48,6 @@ route.post("/getUserReferals", userController.getReferrals);
 route.post("/checkReferral", userController.checkReferral);
 route.post("/fristLevelReferral", userController.userFristReferral);
 
-
 // ---------------------- leader boards -------------------------------
 route.get("/leaderBoardList", userController.leaderboard);
 route.get("/transactionBoardList", userController.transactionBoard);

@@ -1801,11 +1801,71 @@ async function userFristReferral(req, res) {
         data: {},
       });
     }
-    const userRef = await userModel
-      .find({
-        referred: findUser?.id,
-      })
-      .countDocuments();
+    const referrals = await userModel.aggregate([
+      {
+        $match: { email: email },
+      },
+      {
+        $graphLookup: {
+          from: "users",
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "referred",
+          as: "referrals",
+          maxDepth: 5,
+          depthField: "level",
+        },
+      },
+      {
+        $unwind: "$referrals",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "referrals._id",
+          foreignField: "referred",
+          as: "userReferrals",
+        },
+      },
+      {
+        $addFields: {
+          "referrals.referralCount": { $size: "$userReferrals" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "referrals.referred",
+          foreignField: "_id",
+          as: "referredUser",
+        },
+      },
+      {
+        $unwind: "$referredUser",
+      },
+      {
+        $group: {
+          _id: "$referrals.level",
+          users: {
+            $push: {
+              name: "$referrals.name",
+              email: "$referrals.email",
+              referred: "$referredUser.name",
+              createdAt: "$referrals.createdAt",
+              referralCount: "$referrals.referralCount",
+            },
+          },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by level
+      },
+    ]);
+
+    let levels = {};
+    referrals.forEach((level) => {
+      levels[`level${level._id + 1}`] = level.users;
+    });
     const userTotalTradedValue = await TxnEvm.aggregate([
       {
         $match: { userId: findUser?.id },
@@ -1843,7 +1903,7 @@ async function userFristReferral(req, res) {
       status: true,
       code: HTTP.SUCCESS,
       msg: "fetched!!",
-      data: { refferalCount: userRef, totalTradeValue: userTotalTradedValue[0]?.totalTradedvalue },
+      data: { refferalCount: levels, totalTradeValue: userTotalTradedValue[0]?.totalTradedvalue },
     });
   } catch (error) {
     console.log("🚀 ~ userFristReferral ~ error:", error?.message)
