@@ -797,17 +797,20 @@ const getVolumeBynetwork = async (req, res) => {
         code: HTTP.BAD_REQUEST,
         msg: "Invalid Data",
       });
-
-    if (network === "all") {
-      let transactionData = await TxnEvm.aggregate([
+    
+    let transactionData;
+    if (network == "all") {
+      transactionData = await TxnEvm.aggregate([
         {
           $group: {
-            _id: null,
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
             totalBuyDollar: {
               $sum: {
                 $cond: [
                   {
-                    $eq: ["$method", "buy"],
+                    $and: [{ $eq: ["$method", "buy"] }],
                   },
                   "$dollar",
                   0,
@@ -818,7 +821,7 @@ const getVolumeBynetwork = async (req, res) => {
               $sum: {
                 $cond: [
                   {
-                    $eq: ["$method", "sell"],
+                    $and: [{ $eq: ["$method", "sell"] }],
                   },
                   "$dollar",
                   0,
@@ -829,7 +832,7 @@ const getVolumeBynetwork = async (req, res) => {
               $sum: {
                 $cond: [
                   {
-                    $eq: ["$method", "buy"],
+                    $and: [{ $eq: ["$method", "buy"] }],
                   },
                   1,
                   0,
@@ -840,7 +843,7 @@ const getVolumeBynetwork = async (req, res) => {
               $sum: {
                 $cond: [
                   {
-                    $eq: ["$method", "sell"],
+                    $and: [{ $eq: ["$method", "sell"] }],
                   },
                   1,
                   0,
@@ -849,96 +852,74 @@ const getVolumeBynetwork = async (req, res) => {
             },
           },
         },
+        {
+          $sort: { _id: -1 },
+        },
       ]);
-
-      // const result = await TxnEvm.aggregate([{ $group: { _id: "$userId" } }, { $count: "distinctUserCount" }]);
-      // const userCount = result.length > 0 ? result[0].distinctUserCount : 0;
-      const userCount = await userModel.countDocuments({});
-
-      const combinedData = transactionData.map((data) => {
-        return {
-          date: "Till Date",
-          key: "all",
-          userCount,
-          totalBuyDollar: data?.totalBuyDollar ? Number(data?.totalBuyDollar.toFixed()) : 0,
-          totalSellDollar: data?.totalSellDollar ? Number(data?.totalSellDollar.toFixed()) : 0,
-          totalTrades: (data?.buyCount || 0) + (data?.sellCount || 0),
-          totalVolume: Number(Number(data?.totalBuyDollar + data?.totalSellDollar).toFixed()) || 0,
-        };
-      });
-
-      return res.status(HTTP.SUCCESS).send({
-        status: true,
-        code: HTTP.SUCCESS,
-        msg: "All Data",
-        data: combinedData,
-      });
+    } else {
+      transactionData = await TxnEvm.aggregate([
+        {
+          $match: {
+            network: network,
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            totalBuyDollar: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
+                  },
+                  "$dollar",
+                  0,
+                ],
+              },
+            },
+            totalSellDollar: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
+                  },
+                  "$dollar",
+                  0,
+                ],
+              },
+            },
+            buyCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            sellCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        {
+          $sort: { _id: -1 },
+        },
+      ]);
     }
 
-    // First, aggregate transaction data by date and network
-    const transactionData = await TxnEvm.aggregate([
-      {
-        $match: {
-          network: network,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-          },
-          totalBuyDollar: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
-                },
-                "$dollar",
-                0,
-              ],
-            },
-          },
-          totalSellDollar: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
-                },
-                "$dollar",
-                0,
-              ],
-            },
-          },
-          buyCount: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [{ $eq: ["$method", "buy"] }, { $eq: ["$network", network] }],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-          sellCount: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [{ $eq: ["$method", "sell"] }, { $eq: ["$network", network] }],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-      {
-        $sort: { _id: -1 },
-      },
-    ]);
-
-    // Then, aggregate user data by date
     const userdata = await userModel.aggregate([
       {
         $group: {
@@ -950,10 +931,8 @@ const getVolumeBynetwork = async (req, res) => {
       },
     ]);
 
-    // Create a set of all unique dates
     const allDates = new Set([...userdata.map((user) => user._id), ...transactionData.map((txn) => txn._id)]);
 
-    // Combine data based on all unique dates
     const combinedData = Array.from(allDates).map((date) => {
       const user = userdata.find((u) => u._id === date) || {};
       const transaction = transactionData.find((t) => t._id === date) || {};
