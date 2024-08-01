@@ -1781,6 +1781,12 @@ async function checkReferral(req, res) {
 async function userFristReferral(req, res) {
   try {
     const { chatId, email } = req.body;
+    const now = await new Date();
+    const lastWeek = moment
+      .tz(now, "UTC")
+      .subtract(7, "days")
+      .startOf("day")
+      .toDate();
     if (!chatId && !email) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -1868,7 +1874,7 @@ async function userFristReferral(req, res) {
     });
     const userTotalTradedValue = await TxnEvm.aggregate([
       {
-        $match: { userId: findUser?.id },
+        $match: { userId: findUser?.id, createdAt: { $gte: lastWeek } },
       },
       {
         $group: {
@@ -1881,7 +1887,7 @@ async function userFristReferral(req, res) {
           coll: "transfers",
           pipeline: [
             {
-              $match: { userId: findUser?.id },
+              $match: { userId: findUser?.id, createdAt: { $gte: lastWeek } },
             },
             {
               $group: {

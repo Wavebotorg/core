@@ -306,8 +306,6 @@ async function solanaSwapping(req, res) {
       const walletDetails =
         (chatId && (await getWalletInfo(chatId))) ||
         (email && (await getWalletInfoByEmail(email)));
-      console.log("🚀 ~ solanaSwapping ~ walletDetails:", walletDetails);
-
       const inTokenBalance =
         input != "So11111111111111111111111111111111111111112" &&
         (await getSoalanaTokenBalance(walletDetails?.solanawallet, input));
