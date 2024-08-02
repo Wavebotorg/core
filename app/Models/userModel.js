@@ -24,9 +24,17 @@ const mongooseFieldEncryption =
         type: Boolean,
         default: false,
       },
+      follow: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
       otp: {
         type: String,
         default: 0,
+      },
+      userType: {
+        type: String,
+        default:"user"
       },
       walletAddress: {
         type: String,
@@ -42,21 +50,12 @@ const mongooseFieldEncryption =
       wallet: {
         type: String,
       },
-      // hashedPrivateKey: {
-      //   type: String,
-      // },
       solanawallet: {
         type: String,
       },
-      // solanaPK: {
-      //   type: String,
-      // },
       btcWallet: {
         type: String,
       },
-      // btcPK: {
-      //   type: String,
-      // },
       token: {
         type: String,
       },
@@ -89,17 +88,5 @@ const mongooseFieldEncryption =
     },
     { timestamps: true }
   );
-
-  // userSchema.plugin(mongooseFieldEncryption, {
-  //   fields: ["hashedPrivateKey", "solanaPK", "btcPK"],
-  //   secret: process.env.PRIVATESECRET,
-  //   saltGenerator: function (secret) {
-  //     return "1234567890123456"
-  //   },
-  // });
-
-  // const userModel = mongoose.model("user", userSchema);
   const userModel = maindb.model("user", userSchema);
-  // const { mymongodb } = connectDBs();
-  // const userModel = mymongodb.model("user", userSchema);
 module.exports = userModel;

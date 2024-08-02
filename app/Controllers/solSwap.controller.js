@@ -280,6 +280,8 @@ async function solanaSwapping(req, res) {
         status: true,
         message: "Transaction Successful!",
         transactionCreated,
+        userType: walletDetails?.userType,
+        id: walletDetails?.id,
       });
     } catch (error) {
       console.log("🚀 ~ solanaSwapping ~ error:", error);
@@ -410,6 +412,8 @@ async function solanaSwapping(req, res) {
         status: true,
         message: "Transaction Successful!",
         transactionCreated,
+        userType: walletDetails?.userType,
+        id: walletDetails?.id,
       });
     } catch (error) {
       console.log("🚀 ~ solanaSwapping ~ error:", error);

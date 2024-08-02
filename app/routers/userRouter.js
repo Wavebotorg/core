@@ -109,6 +109,6 @@ route.post(
   position.getPositionSingleTokenInfoSol
 );
 
-// route.post("/meet", userController.meet);
+// route.get("/meet", userController.addFollow);
 
 module.exports = route;

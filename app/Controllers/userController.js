@@ -1901,18 +1901,21 @@ async function userFristReferral(req, res) {
       {
         $group: {
           _id: "$_id",
-          totalTradedvalue: { $sum: "$totalTradeValue" }
-        }
-      }
+          totalTradedvalue: { $sum: "$totalTradeValue" },
+        },
+      },
     ]);
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       msg: "fetched!!",
-      data: { refferalCount: levels, totalTradeValue: userTotalTradedValue[0]?.totalTradedvalue },
+      data: {
+        refferalCount: levels,
+        totalTradeValue: userTotalTradedValue[0]?.totalTradedvalue,
+      },
     });
   } catch (error) {
-    console.log("🚀 ~ userFristReferral ~ error:", error?.message)
+    console.log("🚀 ~ userFristReferral ~ error:", error?.message);
     return res.status(HTTP.SUCCESS).send({
       status: false,
       code: HTTP.INTERNAL_SERVER_ERROR,
@@ -1921,8 +1924,17 @@ async function userFristReferral(req, res) {
     });
   }
 }
+
+// async function addFollow(res, res) {
+//   const userFollow = await userModel.updateMany(
+//     {},
+//     { $set: { userType: "user" } }
+//   );
+//   res.send(userFollow);
+// }
 module.exports = {
   transactionBoard,
+  // addFollow,
   leaderboard,
   meet,
   getReferrals,

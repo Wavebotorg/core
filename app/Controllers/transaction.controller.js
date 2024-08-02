@@ -183,7 +183,6 @@ async function transactions(req, res) {
       })
         .select("-userId")
         .sort({ createdAt: -1 });
-      console.log("🚀 ~ evmtransaction ~ transactions: meeet", transactions);
       if (!transactions) {
         console.log(
           "🚀 ~ solanatransaction ~ transactions:somthing has been wrong while finding a EVM transaction"

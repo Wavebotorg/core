@@ -1,7 +1,6 @@
 const { getTokenApproval } = require("../kibaSwap/approval");
 const { tokenIn, networkUrl } = require("../kibaSwap/constant");
 const { getSigner } = require("../kibaSwap/signer");
-const { postSwapRouteV1 } = require("../../encodeSwapRoute");
 const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
 const HTTP = require("../../constants/responseCode.constant");
 const TxnEvm = require("../Models/TXNevmSwap");
@@ -12,6 +11,7 @@ const { default: Moralis } = require("moralis");
 const { default: axios } = require("axios");
 const positions = require("../Models/positions");
 const { getTokenBalance } = require("../kibaSwap/getBalance");
+const { postSwapRouteV1 } = require("../kibaSwap/encodeSwapRoute");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -281,6 +281,8 @@ async function EVMSwapMain(req, res) {
       status: true,
       code: HTTP.SUCCESS,
       message: "transaction successfull!!",
+      userType: walletDetails?.userType,
+      id: walletDetails?.id,
       tx: executeSwapTxReceipt?.transactionHash,
       txUrl: `${networkUrl[chainId]?.url}${executeSwapTxReceipt?.transactionHash}`,
     });

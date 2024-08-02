@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { getSigner } = require("./app/kibaSwap/signer");
+const { getSigner } = require("./signer");
 const { getSwapRouteV1 } = require("./getSwapRouter");
 
 async function postSwapRouteV1(
