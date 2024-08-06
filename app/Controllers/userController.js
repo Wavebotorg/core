@@ -1673,32 +1673,6 @@ async function transactionBoard(req, res) {
             totalTransferToken: { $sum: "$dollar" },
           },
         },
-        // {
-        //   $unionWith: {
-        //     coll: "transfers",
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           createdAt: { $gte: startDate },
-        //         },
-        //       },
-        //       {
-        //         $group: {
-        //           _id: "$userId",
-        //           totalTransaction: { $sum: 1 },
-        //           totalTransferToken: { $sum: "$dollar" },
-        //         },
-        //       },
-        //     ],
-        //   },
-        // },
-        {
-          $group: {
-            _id: "$_id",
-            totalTransaction: { $sum: "$totalTransaction" },
-            totalTransferToken: { $sum: "$totalTransferToken" },
-          },
-        },
         {
           $lookup: {
             from: "users",
