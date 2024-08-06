@@ -156,7 +156,21 @@ const tokenOut = {
   name: "KyberNetwork Crystal v2 (PoS)",
 };
 
+//  gas fee structure
+
+const gasFeeStructure = {
+  solana: {
+    medium: {
+      gasFee:500000
+    },
+    turbo: {
+      gasFee:1000000
+    },
+  }
+}
+
 module.exports = {
+  gasFeeStructure,
   ChainName,
   ChainId,
   tokenIn,

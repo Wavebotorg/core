@@ -18,17 +18,53 @@ const getAllKeys = async ({ userId }) => {
   const keySan = Buffer.from(process.env.keyHexSan, "hex");
 
   // Decrypt data from databases
-  const decEvmP1 = decryptData(data1?.evmData?.encryptedData, data1?.evmData?.iv, keyIchi);
-  const decEvmP2 = decryptData(data2?.evmData?.encryptedData, data2?.evmData?.iv, keyNi);
-  const decEvmP3 = decryptData(data3?.evmData?.encryptedData, data3?.evmData?.iv, keySan);
+  const decEvmP1 = decryptData(
+    data1?.evmData?.encryptedData,
+    data1?.evmData?.iv,
+    keyIchi
+  );
+  const decEvmP2 = decryptData(
+    data2?.evmData?.encryptedData,
+    data2?.evmData?.iv,
+    keyNi
+  );
+  const decEvmP3 = decryptData(
+    data3?.evmData?.encryptedData,
+    data3?.evmData?.iv,
+    keySan
+  );
 
-  const decBtcP1 = decryptData(data1?.btcData?.encryptedData, data1?.btcData?.iv, keyIchi);
-  const decBtcP2 = decryptData(data2?.btcData?.encryptedData, data2?.btcData?.iv, keyNi);
-  const decBtcP3 = decryptData(data3?.btcData?.encryptedData, data3?.btcData?.iv, keySan);
+  const decBtcP1 = decryptData(
+    data1?.btcData?.encryptedData,
+    data1?.btcData?.iv,
+    keyIchi
+  );
+  const decBtcP2 = decryptData(
+    data2?.btcData?.encryptedData,
+    data2?.btcData?.iv,
+    keyNi
+  );
+  const decBtcP3 = decryptData(
+    data3?.btcData?.encryptedData,
+    data3?.btcData?.iv,
+    keySan
+  );
 
-  const decSolP1 = decryptData(data1?.solData?.encryptedData, data1?.solData?.iv, keyIchi);
-  const decSolP2 = decryptData(data2?.solData?.encryptedData, data2?.solData?.iv, keyNi);
-  const decSolP3 = decryptData(data3?.solData?.encryptedData, data3?.solData?.iv, keySan);
+  const decSolP1 = decryptData(
+    data1?.solData?.encryptedData,
+    data1?.solData?.iv,
+    keyIchi
+  );
+  const decSolP2 = decryptData(
+    data2?.solData?.encryptedData,
+    data2?.solData?.iv,
+    keyNi
+  );
+  const decSolP3 = decryptData(
+    data3?.solData?.encryptedData,
+    data3?.solData?.iv,
+    keySan
+  );
 
   // Parse decrypted data
   const parsedEvmP1 = JSON.parse(decEvmP1);
@@ -51,7 +87,11 @@ const getAllKeys = async ({ userId }) => {
 };
 
 exports.getPoolImmutables = async (poolContract) => {
-  const [token0, token1, fee] = await Promise.all([poolContract.token0(), poolContract.token1(), poolContract.fee()]);
+  const [token0, token1, fee] = await Promise.all([
+    poolContract.token0(),
+    poolContract.token1(),
+    poolContract.fee(),
+  ]);
 
   const immutables = {
     token0: token0,
@@ -88,13 +128,16 @@ exports.getWalletInfo = async (chatId) => {
       return null;
     }
 
-    const { hashedPrivateKey, solanaPK, btcPk } = await getAllKeys({ userId: user._id });
+    const { hashedPrivateKey, solanaPK, btcPk } = await getAllKeys({
+      userId: user._id,
+    });
 
     return {
       id: user?._id,
       email: user?.email,
       wallet: user?.wallet,
       userType: user?.userType,
+      gasFee: user?.gasFee,
       name: user?.name,
       hashedPrivateKey,
       solanaPK,
@@ -104,7 +147,10 @@ exports.getWalletInfo = async (chatId) => {
       referralId: user?.referralId,
     };
   } catch (error) {
-    console.error("Error fetching wallet information from the database:", error.message);
+    console.error(
+      "Error fetching wallet information from the database:",
+      error.message
+    );
     throw error;
   }
 };
@@ -116,13 +162,16 @@ exports.getWalletInfoByEmail = async (email) => {
       throw new Error("user not found!!");
     }
 
-    const { hashedPrivateKey, solanaPK, btcPk } = await getAllKeys({ userId: user._id });
+    const { hashedPrivateKey, solanaPK, btcPk } = await getAllKeys({
+      userId: user._id,
+    });
 
     return {
       id: user?._id,
       name: user?.name,
       email: user?.email,
       wallet: user?.wallet,
+      gasFee: user?.gasFee,
       userType: user?.userType,
       hashedPrivateKey,
       solanaPK,
@@ -132,7 +181,10 @@ exports.getWalletInfoByEmail = async (email) => {
       referralId: user?.referralId,
     };
   } catch (error) {
-    console.error("Error fetching wallet information from the database:", error.message);
+    console.error(
+      "Error fetching wallet information from the database:",
+      error.message
+    );
     throw error;
   }
 };

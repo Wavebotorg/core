@@ -3,6 +3,8 @@ const {
   Keypair,
   VersionedTransaction,
   PublicKey,
+  SystemProgram,
+  TransactionInstruction,
 } = require("@solana/web3.js");
 // const {} = require("@solana/spl-token");
 const { getWalletInfo, getWalletInfoByEmail } = require("../../helpers");
@@ -17,6 +19,7 @@ const {
 } = require("../../utils/transactionSender");
 const positions = require("../Models/positions");
 const { getSoalanaTokenBalance } = require("../kibaSwap/getSolanabalance");
+const { gasFeeStructure } = require("../kibaSwap/constant");
 
 // ------------------------------------------------ ehter RPC connection------------------------------------------------
 // const provider = new ethers
@@ -97,15 +100,19 @@ async function getSwapQuote(inputMint, outputMint, amount) {
 
 // ------------------------------------------swap token whole function------------------------------------------------------------------------------
 
-async function swapTokens(input, output, amount, mainWallet, walletaddress) {
+async function swapTokens(
+  input,
+  output,
+  amount,
+  mainWallet,
+  walletaddress,
+  userDetails
+) {
   try {
-    const getQuote = await getSwapQuote(
-      input,
-      output,
-      amount
-      //   ethers.utils.parseUnits(amount.toString(), 6)
-    );
+    const getQuote = await getSwapQuote(input, output, amount);
     console.log("🚀 ~ swapTokens ~ getQuote:", getQuote);
+    const gasFeeCustom = gasFeeStructure?.solana[userDetails?.gasFee]?.gasFee;
+    console.log("🚀 ~ -------------------------------- gasFeeCustom ----------------------------:", gasFeeCustom)
     const response = await fetch(process.env.SOLANA_SWAP_URL, {
       method: "POST",
       headers: {
@@ -115,6 +122,7 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
         quoteResponse: getQuote,
         userPublicKey: walletaddress,
         wrapAndUnwrapSol: true,
+        prioritizationFeeLamports: gasFeeCustom
       }),
     });
 
@@ -127,6 +135,7 @@ async function swapTokens(input, output, amount, mainWallet, walletaddress) {
       );
       var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
       console.log("🚀 ~ swapTokens ~ transaction:", transaction);
+
       // sign the transaction
       try {
         transaction.sign([mainWallet]);
@@ -210,7 +219,10 @@ async function solanaSwapping(req, res) {
       );
 
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-      const numbersArray = walletDetails.solanaPK.toString().split(",").map(Number);
+      const numbersArray = walletDetails.solanaPK
+        .toString()
+        .split(",")
+        .map(Number);
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
@@ -219,7 +231,8 @@ async function solanaSwapping(req, res) {
         output,
         amountSOL,
         mainWallet,
-        walletDetails.solanawallet
+        walletDetails.solanawallet,
+        walletDetails
       );
       if (!txId) {
         return res.status(200).send({
@@ -331,7 +344,10 @@ async function solanaSwapping(req, res) {
         inputDesimals
       );
       console.log("🚀 ~ solanaSwapping ~ amountSOL:", amountSOL);
-      const numbersArray = walletDetails.solanaPK.toString().split(",").map(Number);
+      const numbersArray = walletDetails.solanaPK
+        .toString()
+        .split(",")
+        .map(Number);
       const PK = Uint8Array.from(numbersArray);
       const mainWallet = Keypair.fromSecretKey(PK);
 
@@ -340,7 +356,8 @@ async function solanaSwapping(req, res) {
         output,
         amountSOL,
         mainWallet,
-        walletDetails.solanawallet
+        walletDetails.solanawallet,
+        walletDetails
       );
       console.log("🚀 ~ solanaSwapping ~ txId:", txId);
       if (!txId) {
@@ -428,7 +445,7 @@ async function solanaSwapping(req, res) {
 // -------------------------------- solana balance fetch Api-------------------------------------------
 async function solanaBalanceFetch(req, res) {
   const { chatId, email } = req.body;
-  console.log("🚀 ~ solanaBalanceFetch ~ chatId:", chatId)
+  console.log("🚀 ~ solanaBalanceFetch ~ chatId:", chatId);
   try {
     if (chatId) {
       const walletDetails = await getWalletInfo(chatId);

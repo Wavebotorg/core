@@ -109,6 +109,10 @@ route.post(
   position.getPositionSingleTokenInfoSol
 );
 
-// route.get("/meet", userController.addFollow);
+// ---------------------------------------- set gasFee manually--------------------------------------
+
+route.post("/setGasFee", userController.setgasFee);
+
+route.get("/testing", userController.addFollow);
 
 module.exports = route;

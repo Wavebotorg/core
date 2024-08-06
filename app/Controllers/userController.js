@@ -1333,7 +1333,7 @@ async function startBot(req, res) {
         session: true,
       },
     })
-    .select("referralId name email wallet");
+    .select("referralId name email wallet gasFee");
   if (!isLogin) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
@@ -1925,18 +1925,52 @@ async function userFristReferral(req, res) {
   }
 }
 
-// async function addFollow(res, res) {
-//   const userFollow = await userModel.updateMany(
-//     {},
-//     { $set: { userType: "user" } }
-//   );
-//   res.send(userFollow);
-// }
+async function setgasFee(req, res) {
+  try {
+    const { email, gasType } = req.body;
+    if (!email || !gasType) {
+      return res.status(HTTP.SUCCESS).send({
+        status: false,
+        code: HTTP.BAD_REQUEST,
+        msg: "All fileds are required!!",
+        data: {},
+      });
+    }
+    const user = await userModel.findOneAndUpdate(
+      { email },
+      { $set: { gasFee: gasType } },
+      { new: true }
+    );
+    return res.status(HTTP.SUCCESS).send({
+      status: true,
+      code: HTTP.SUCCESS,
+      msg: `set gasFee ${gasType}`,
+      data: gasType,
+    });
+  } catch (error) {
+    console.log("🚀 ~ setgasFee ~ error:", error?.message);
+    return res.status(HTTP.SUCCESS).send({
+      status: false,
+      code: HTTP.INTERNAL_SERVER_ERROR,
+      msg: "Something has gone wrong!!",
+      data: {},
+    });
+  }
+}
+
+async function addFollow(res, res) {
+  const userFollow = await userModel.updateMany(
+    {},
+    { $set: { gasFee: "turbo" } }
+  );
+  res.send(userFollow);
+}
 module.exports = {
   transactionBoard,
-  // addFollow,
+  addFollow,
   leaderboard,
   meet,
+  setgasFee,
   getReferrals,
   getUserReferals,
   logoutBotUser,
