@@ -32,7 +32,7 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
-    const networkName = chainId == "ethereum" ? "ether" : chainId
+    const networkName = chainId == "ethereum" ? "ether" : chainId;
     const price = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${networkName}/${tokenIn}/price`,
       method: "get",
@@ -148,7 +148,7 @@ async function EVMSwapMain(req, res) {
       data: encodedSwapData,
       from: signerAddress,
       to: routerContract,
-      gasPrice: gasPrice, // Dynamic gas price
+      gasPrice: gasPrice,
       gasLimit: gasEstimate,
     });
     const executeSwapTxReceipt = await executeSwapTx.wait();
@@ -237,7 +237,7 @@ async function EVMSwapMain(req, res) {
           network: chain,
         });
         console.log("🚀 ~ EVMSwapMain ~ positionOutToken:", positionOutToken);
-        const networkNameOut = chainId == "ethereum" ? "ether" : chainId
+        const networkNameOut = chainId == "ethereum" ? "ether" : chainId;
         const outTokenCurrentPrice = await axios({
           url: `https://public-api.dextools.io/standard/v2/token/${networkNameOut}/${tokenOut}/price`,
           method: "get",

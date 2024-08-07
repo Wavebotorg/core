@@ -111,7 +111,7 @@ async function swapTokens(
   try {
     const getQuote = await getSwapQuote(input, output, amount);
     console.log("🚀 ~ swapTokens ~ getQuote:", getQuote);
-    const gasFeeCustom = gasFeeStructure?.solana[userDetails?.gasFee]?.gasFee;
+    const gasFeeCustom = gasFeeStructure?.solana[userDetails?.gasFeeStructure["solana"]?.gasType]?.gasFee;
     console.log("🚀 ~ -------------------------------- gasFeeCustom ----------------------------:", gasFeeCustom)
     const response = await fetch(process.env.SOLANA_SWAP_URL, {
       method: "POST",
