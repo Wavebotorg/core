@@ -93,7 +93,6 @@ async function EVMSwapMain(req, res) {
     }
     const encodedSwapData = swapData?.encodeResponse?.data;
     const routerContract = swapData?.encodeResponse?.routerAddress;
-    // console.log("🚀 ~ EVMSwapMain ~ routerContract:", routerContract);
     console.log("🚀 ~ EVMSwapMain ~ routerContract: get successfull!!");
 
     // // Use the configured signer to submit the on-chain transactions
@@ -136,7 +135,7 @@ async function EVMSwapMain(req, res) {
     // Execute the swap transaction
     console.log(`\n Executing the swap tx on-chain...`);
     // console.log(`Encoded data: ${encodedSwapData}`);
-    console.log(`Router contract address: ${routerContract}`);
+    // console.log(`Router contract address: ${routerContract}`);
     const gasPrice = await signer.getGasPrice();
     console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice);
     const gasEstimate = await signer.estimateGas({
@@ -182,7 +181,7 @@ async function EVMSwapMain(req, res) {
           tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
           network: Number(chain),
         });
-        console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+        // console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
         if (positionToken?.tokenAddress) {
           console.log(
             "----------------------------execute sell--------------------------"

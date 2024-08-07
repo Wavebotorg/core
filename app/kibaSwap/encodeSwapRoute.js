@@ -27,7 +27,6 @@ async function postSwapRouteV1(
     chatId
   );
   const routeSummary = swapRouteData?.routeSummary;
-  console.log("🚀 ~ postSwapRouteV1 ~ routeSummary:", routeSummary);
   // routeSummary.gasPrice = routeSummary.gasPrice * 5;
 
   // Get the signer's address
