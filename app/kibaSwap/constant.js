@@ -164,7 +164,7 @@ const gasFeeStructure = {
       gasFee:1500000
     },
     turbo: {
-      gasFee:750000
+      gasFee:7500000
     },
   }
 }
