@@ -13,6 +13,7 @@ const transferEvm = require("../Controllers/transferToken.controller");
 const solanaTransfer = require("../Controllers/solanaTransfer.controller");
 const dex = require("../Controllers/dex.controller");
 const position = require("../Controllers/position.controller");
+const copyTradingController = require("../Controllers/copyTradingController");
 
 // -----------------------testing-------------------------------------
 // route.post("/check", userController.checkData);
@@ -31,17 +32,10 @@ route.post("/sendOtp", userController.sendOtp);
 route.get("/getUserProfile", authuser, userController.getUserProfile);
 route.get("/recentUsers", authuser, userController.recentUsers);
 route.get("/allWatchlistData", authuser, userController.allWatchList);
-route.post(
-  "/removeCoinWatchlist",
-  authuser,
-  userController.removeCoinWatchlist
-);
+route.post("/removeCoinWatchlist", authuser, userController.removeCoinWatchlist);
 route.post("/fetchbalance", userController.fetchBalance);
 route.post("/getSingleTokenPrice", userController.getSingleTokenPrice);
-route.post(
-  "/getSolanaSingleTokenPrice",
-  userController.getSolanaSingleTokenPrice
-);
+route.post("/getSolanaSingleTokenPrice", userController.getSolanaSingleTokenPrice);
 
 // ---------------------- referrals apis -------------------------------
 route.post("/getUserReferals", userController.getReferrals);
@@ -61,11 +55,7 @@ route.post("/swapToken", SwapToken.swapToken);
 route.post("/solanaSwap", solanaswapping.solanaSwapping);
 route.post("/solanaBalance", solanaswapping.solanaBalanceFetch);
 route.post("/getSolanaTokenPrice", solanaswapping.getSolanaTokenPrice);
-route.post(
-  "/getSolanaWalletTokenBal",
-  authuser,
-  solanaswapping.getSolanaWalletInfo
-);
+route.post("/getSolanaWalletTokenBal", authuser, solanaswapping.getSolanaWalletInfo);
 
 route.post("/getUserBotData", solanaswapping.getUserBotData);
 route.post("/mainswap", userController.mainswap);
@@ -100,15 +90,21 @@ route.post("/dexSol", dex.dexSol);
 // ----------------------------------------- position apis --------------------------------------------
 route.post("/getPositions", position.positionsListEvm);
 route.post("/getSolanaPositions", position.positionsListForSolana);
-route.post(
-  "/getPositionSingleTokenInfoEvm",
-  position.getPositionSingleTokenInfoEvm
-);
-route.post(
-  "/getPositionSingleTokenInfoSol",
-  position.getPositionSingleTokenInfoSol
-);
+route.post("/getPositionSingleTokenInfoEvm", position.getPositionSingleTokenInfoEvm);
+route.post("/getPositionSingleTokenInfoSol", position.getPositionSingleTokenInfoSol);
 
 // route.get("/meet", userController.addFollow);
+
+// -------------------------copy trading-------------------------------
+// user can update to being a trader
+route.get("/becomeTrader", authuser, copyTradingController.becomeTrader);
+// user can follow a trader
+route.post("/followTrader", authuser, copyTradingController.followTrader);
+route.get("/unfollowTrader", authuser, copyTradingController.unfollowTrader);
+// list of all followers of the trader
+route.post("/getFollowers", authuser, copyTradingController.getFollowers);
+route.get("/listOfTraders", authuser, copyTradingController.listOfTraders);
+
+
 
 module.exports = route;

@@ -28,13 +28,20 @@ const mongooseFieldEncryption =
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
       },
+      copyTrade: {
+        type: String,
+        default: "pause",
+      },
+      percentage: {
+        type: String,
+      },
       otp: {
         type: String,
         default: 0,
       },
       userType: {
         type: String,
-        default:"user"
+        default: "user",
       },
       walletAddress: {
         type: String,
@@ -88,5 +95,6 @@ const mongooseFieldEncryption =
     },
     { timestamps: true }
   );
-  const userModel = maindb.model("user", userSchema);
+  
+const userModel = maindb.model("user", userSchema);
 module.exports = userModel;
