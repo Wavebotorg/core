@@ -160,11 +160,11 @@ const tokenOut = {
 
 const gasFeeStructure = {
   solana: {
-    fast: {
-      gasFee: 1500000,
+    medium: {
+      gasFee:1500000
     },
     turbo: {
-      gasFee: 7500000,
+      gasFee:7500000
     },
   },
   evm: {
