@@ -115,4 +115,7 @@ route.post("/setGasFee", userController.setgasFee);
 
 route.get("/testing", userController.addFollow);
 
+// -----------------------------------------referral-card------------------------------------------------
+route.post("/referralCard", userController.referralCard);
+
 module.exports = route;
