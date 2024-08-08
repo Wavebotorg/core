@@ -1,5 +1,9 @@
 const { getTokenApproval } = require("../kibaSwap/approval");
-const { tokenIn, networkUrl } = require("../kibaSwap/constant");
+const {
+  tokenIn,
+  networkUrl,
+  gasFeeStructure,
+} = require("../kibaSwap/constant");
 const { getSigner } = require("../kibaSwap/signer");
 const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
 const HTTP = require("../../constants/responseCode.constant");
@@ -12,6 +16,10 @@ const { default: axios } = require("axios");
 const positions = require("../Models/positions");
 const { getTokenBalance } = require("../kibaSwap/getBalance");
 const { postSwapRouteV1 } = require("../kibaSwap/encodeSwapRoute");
+const {
+  convertToNormalNumber,
+  convertToBigInt,
+} = require("../kibaSwap/numberConverter");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -134,10 +142,18 @@ async function EVMSwapMain(req, res) {
 
     // Execute the swap transaction
     console.log(`\n Executing the swap tx on-chain...`);
-    // console.log(`Encoded data: ${encodedSwapData}`);
-    // console.log(`Router contract address: ${routerContract}`);
     const gasPrice = await signer.getGasPrice();
-    console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice);
+    let modifiedGasFee = 0;
+    let gasType = walletDetails?.gasFeeStructure[chain]?.gasType;
+    console.log("🚀 ~ EVMSwapMain ~ gasType:", gasType);
+    if (gasType != "custom") {
+      modifiedGasFee = gasPrice.mul(gasFeeStructure?.evm[gasType]?.gasFee);
+      console.log("🚀 ~ EVMSwapMain ~ modifiedGasFee:", modifiedGasFee);
+    } else {
+      let customFee = walletDetails?.gasFeeStructure[chain]?.customGas;
+      modifiedGasFee = await convertToBigInt(customFee);
+      console.log("🚀 ~ EVMSwapMain ~ modifiedGasFee:", modifiedGasFee);
+    }
     const gasEstimate = await signer.estimateGas({
       to: routerContract,
       data: encodedSwapData,

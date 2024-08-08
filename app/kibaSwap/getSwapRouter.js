@@ -26,7 +26,6 @@ async function getSwapRouteV1(
     //   targetPathConfig
     // );
     const amt = await ethers.utils.parseUnits(amount?.toString(), desimals);
-    console.log("🚀 ~ getSwapRouteV1 ~ amt:", amt);
     const swapRoute = await axios({
       url: `https://aggregator-api.kyberswap.com/${targetChain}/api/v1/routes`,
       method: "get",
@@ -37,7 +36,7 @@ async function getSwapRouteV1(
       },
     });
 
-    console.log(`[V1] GET Response:`, swapRoute?.data?.data);
+    console.log(`[V1] GET Response:`, swapRoute?.data?.data?.routeSummary);
     return swapRoute?.data?.data;
   } catch (error) {
     console.log(error);
