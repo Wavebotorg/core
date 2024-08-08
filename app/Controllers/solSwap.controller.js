@@ -111,8 +111,19 @@ async function swapTokens(
   try {
     const getQuote = await getSwapQuote(input, output, amount);
     console.log("🚀 ~ swapTokens ~ getQuote:", getQuote);
-    const gasFeeCustom = gasFeeStructure?.solana[userDetails?.gasFee]?.gasFee;
-    console.log("🚀 ~ -------------------------------- gasFeeCustom ----------------------------:", gasFeeCustom)
+    let gasFeeCustom = 0;
+    if (userDetails?.gasFeeStructure?.solana?.gasType != "custom") {
+      gasFeeCustom =
+        gasFeeStructure?.solana[userDetails?.gasFeeStructure?.solana?.gasType]
+          ?.gasFee;
+    } else {
+      gasFeeCustom =
+        userDetails?.gasFeeStructure?.solana?.customGas * 1000000000;
+    }
+    console.log(
+      "🚀 ~ -------------------------------- gasFeeCustom ----------------------------:",
+      gasFeeCustom
+    );
     const response = await fetch(process.env.SOLANA_SWAP_URL, {
       method: "POST",
       headers: {
@@ -122,7 +133,7 @@ async function swapTokens(
         quoteResponse: getQuote,
         userPublicKey: walletaddress,
         wrapAndUnwrapSol: true,
-        prioritizationFeeLamports: gasFeeCustom
+        prioritizationFeeLamports: gasFeeCustom,
       }),
     });
 

@@ -24,10 +24,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    gasFee: {
-      type: String,
-      default: "turbo",
-    },
     follow: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
@@ -35,6 +31,118 @@ const userSchema = new mongoose.Schema(
     otp: {
       type: String,
       default: 0,
+    },
+    gasFeeStructure: {
+      solana: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      1: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      8453: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      56: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      43114: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      42161: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      250: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      137: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      10: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      59144: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
+      25: {
+        gasType: {
+          type: String,
+          default: "fast",
+        },
+        customGas: {
+          type: Number,
+          default: 0,
+        },
+      },
     },
     userType: {
       type: String,

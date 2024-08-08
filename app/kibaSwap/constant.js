@@ -160,14 +160,22 @@ const tokenOut = {
 
 const gasFeeStructure = {
   solana: {
-    medium: {
-      gasFee:1500000
+    fast: {
+      gasFee: 1500000,
     },
     turbo: {
-      gasFee:7500000
+      gasFee: 7500000,
     },
-  }
-}
+  },
+  evm: {
+    fast: {
+      gasFee: 3,
+    },
+    turbo: {
+      gasFee: 6,
+    },
+  },
+};
 
 module.exports = {
   gasFeeStructure,
@@ -178,5 +186,5 @@ module.exports = {
   networkUrl,
   chainUrl,
   desCode,
-  ChainNameById
+  ChainNameById,
 };

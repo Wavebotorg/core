@@ -1333,7 +1333,7 @@ async function startBot(req, res) {
         session: true,
       },
     })
-    .select("referralId name email wallet gasFee");
+    .select("referralId name email wallet gasFeeStructure");
   if (!isLogin) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
@@ -1901,7 +1901,7 @@ async function userFristReferral(req, res) {
 
 async function setgasFee(req, res) {
   try {
-    const { email, gasType } = req.body;
+    const { email, gasType, customFee, chain } = req.body;
     if (!email || !gasType) {
       return res.status(HTTP.SUCCESS).send({
         status: false,
@@ -1910,11 +1910,16 @@ async function setgasFee(req, res) {
         data: {},
       });
     }
-    const user = await userModel.findOneAndUpdate(
+    await userModel.updateOne(
       { email },
-      { $set: { gasFee: gasType } },
-      { new: true }
+      {
+        $set: {
+          [`gasFeeStructure.${chain}.gasType`]: gasType,
+          [`gasFeeStructure.${chain}.customGas`]: customFee,
+        },
+      }
     );
+
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
@@ -1932,13 +1937,68 @@ async function setgasFee(req, res) {
   }
 }
 
-async function addFollow(res, res) {
-  const userFollow = await userModel.updateMany(
-    {},
-    { $set: { gasFee: "turbo" } }
-  );
-  res.send(userFollow);
+async function addFollow(req, res) {
+  try {
+    const addGasFeeStructure = await userModel.updateMany(
+      {},
+      {
+        $set: {
+          gasFeeStructure: {
+            solana: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            1: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            8453: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            56: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            43114: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            42161: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            250: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            137: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            10: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            59144: {
+              gasType: "fast",
+              customGas: 0,
+            },
+            25: {
+              gasType: "fast",
+              customGas: 0,
+            },
+          },
+        },
+      }
+    );
+    res.send(addGasFeeStructure);
+  } catch (error) {
+    console.error("Error updating user follow:", error);
+    res.status(500).send("Internal Server Error");
+  }
 }
+
 module.exports = {
   transactionBoard,
   addFollow,

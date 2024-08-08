@@ -145,6 +145,7 @@ exports.getWalletInfo = async (chatId) => {
       btcPk,
       btcAddress: user?.btcWallet,
       referralId: user?.referralId,
+      gasFeeStructure: user?.gasFeeStructure
     };
   } catch (error) {
     console.error(
@@ -179,6 +180,7 @@ exports.getWalletInfoByEmail = async (email) => {
       btcPk,
       btcAddress: user?.btcWallet,
       referralId: user?.referralId,
+      gasFeeStructure: user?.gasFeeStructure
     };
   } catch (error) {
     console.error(

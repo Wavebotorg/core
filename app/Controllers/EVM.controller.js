@@ -1,5 +1,9 @@
 const { getTokenApproval } = require("../kibaSwap/approval");
-const { tokenIn, networkUrl } = require("../kibaSwap/constant");
+const {
+  tokenIn,
+  networkUrl,
+  gasFeeStructure,
+} = require("../kibaSwap/constant");
 const { getSigner } = require("../kibaSwap/signer");
 const { getEvmTokenMetadata } = require("../kibaSwap/getTokenMetadata");
 const HTTP = require("../../constants/responseCode.constant");
@@ -12,6 +16,10 @@ const { default: axios } = require("axios");
 const positions = require("../Models/positions");
 const { getTokenBalance } = require("../kibaSwap/getBalance");
 const { postSwapRouteV1 } = require("../kibaSwap/encodeSwapRoute");
+const {
+  convertToNormalNumber,
+  convertToBigInt,
+} = require("../kibaSwap/numberConverter");
 async function EVMSwapMain(req, res) {
   // Get the swap data required to execute the transaction on-chain
   try {
@@ -32,7 +40,7 @@ async function EVMSwapMain(req, res) {
         message: "All fields are required!!",
       });
     }
-    const networkName = chainId == "ethereum" ? "ether" : chainId
+    const networkName = chainId == "ethereum" ? "ether" : chainId;
     const price = await axios({
       url: `https://public-api.dextools.io/standard/v2/token/${networkName}/${tokenIn}/price`,
       method: "get",
@@ -93,7 +101,6 @@ async function EVMSwapMain(req, res) {
     }
     const encodedSwapData = swapData?.encodeResponse?.data;
     const routerContract = swapData?.encodeResponse?.routerAddress;
-    // console.log("🚀 ~ EVMSwapMain ~ routerContract:", routerContract);
     console.log("🚀 ~ EVMSwapMain ~ routerContract: get successfull!!");
 
     // // Use the configured signer to submit the on-chain transactions
@@ -135,10 +142,18 @@ async function EVMSwapMain(req, res) {
 
     // Execute the swap transaction
     console.log(`\n Executing the swap tx on-chain...`);
-    // console.log(`Encoded data: ${encodedSwapData}`);
-    console.log(`Router contract address: ${routerContract}`);
     const gasPrice = await signer.getGasPrice();
-    console.log("🚀 ~ EVMSwapMain ~ gasPrice:", gasPrice);
+    let modifiedGasFee = 0;
+    let gasType = walletDetails?.gasFeeStructure[chain]?.gasType;
+    console.log("🚀 ~ EVMSwapMain ~ gasType:", gasType);
+    if (gasType != "custom") {
+      modifiedGasFee = gasPrice.mul(gasFeeStructure?.evm[gasType]?.gasFee);
+      console.log("🚀 ~ EVMSwapMain ~ modifiedGasFee:", modifiedGasFee);
+    } else {
+      let customFee = walletDetails?.gasFeeStructure[chain]?.customGas;
+      modifiedGasFee = await convertToBigInt(customFee);
+      console.log("🚀 ~ EVMSwapMain ~ modifiedGasFee:", modifiedGasFee);
+    }
     const gasEstimate = await signer.estimateGas({
       to: routerContract,
       data: encodedSwapData,
@@ -148,7 +163,7 @@ async function EVMSwapMain(req, res) {
       data: encodedSwapData,
       from: signerAddress,
       to: routerContract,
-      gasPrice: gasPrice, // Dynamic gas price
+      gasPrice: gasPrice,
       gasLimit: gasEstimate,
     });
     const executeSwapTxReceipt = await executeSwapTx.wait();
@@ -182,7 +197,7 @@ async function EVMSwapMain(req, res) {
           tokenAddress: new RegExp(`^${tokenIn}$`, "i"),
           network: Number(chain),
         });
-        console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
+        // console.log("🚀 ~ EVMSwapMain ~ positionToken:", positionToken);
         if (positionToken?.tokenAddress) {
           console.log(
             "----------------------------execute sell--------------------------"
@@ -237,7 +252,7 @@ async function EVMSwapMain(req, res) {
           network: chain,
         });
         console.log("🚀 ~ EVMSwapMain ~ positionOutToken:", positionOutToken);
-        const networkNameOut = chainId == "ethereum" ? "ether" : chainId
+        const networkNameOut = chainId == "ethereum" ? "ether" : chainId;
         const outTokenCurrentPrice = await axios({
           url: `https://public-api.dextools.io/standard/v2/token/${networkNameOut}/${tokenOut}/price`,
           method: "get",

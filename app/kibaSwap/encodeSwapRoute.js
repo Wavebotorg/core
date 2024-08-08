@@ -27,7 +27,7 @@ async function postSwapRouteV1(
     chatId
   );
   const routeSummary = swapRouteData?.routeSummary;
-  console.log("🚀 ~ postSwapRouteV1 ~ routeSummary:", routeSummary);
+  // routeSummary.gasPrice = routeSummary.gasPrice * 5;
 
   // Get the signer's address
   const signer = await getSigner(chain, chainId, email, chatId);
@@ -48,7 +48,7 @@ async function postSwapRouteV1(
         routeSummary: routeSummary,
         sender: signerAddress,
         recipient: signerAddress,
-        slippageTolerance: 50, // 0.1%
+        slippageTolerance: 100, // 0.1%
       },
     });
     // 0 to 1 SOL: 0.5 % (50 basis points)

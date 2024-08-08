@@ -1,6 +1,5 @@
 const { ethers } = require("ethers");
 const ERC20ABI = require("./erc20.json");
-const { getSigner } = require("./signer");
 
 async function getTokenApproval(
   tokenContractAddress,
@@ -15,7 +14,7 @@ async function getTokenApproval(
     ERC20ABI,
     signer
   );
-  console.log("🚀 ~ tokenContract:", tokenContract);
+  // console.log("🚀 ~ tokenContract:", tokenContract);
   const limitOrderContractAllowance = await tokenContract.allowance(
     signerAddress,
     spenderAddress
