@@ -18,6 +18,28 @@ function humanReadableFormat(number) {
   return `${number.toFixed(2)}$ ${units[unitIndex]}`;
 }
 
+// duration counter
+function timeDifferenceFromNow(dateString) {
+  const currentDate = new Date();
+  const givenDate = new Date(dateString);
+
+  // Calculate the difference in milliseconds
+  let diffInMs = Math.abs(currentDate - givenDate);
+
+  // Calculate days, hours, minutes
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  diffInMs -= days * (1000 * 60 * 60 * 24);
+
+  const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+  diffInMs -= hours * (1000 * 60 * 60);
+
+  const minutes = Math.floor(diffInMs / (1000 * 60));
+  diffInMs -= minutes * (1000 * 60);
+
+  // Return the formatted string
+  return `${days}d-${hours}h-${minutes}m`;
+}
+
 //  add comas to the number
 function addCommas(number) {
   const numberString = Number(number)?.toFixed()?.toString();
@@ -48,7 +70,6 @@ async function positionsListEvm(req, res) {
       userId: walletDetails?.id,
       network: chainId,
     });
-    console.log("🚀 ~ positionsList ~ positionData:", positionData);
 
     //  find balances by using token address
     if (!Moralis.Core.isStarted) {
@@ -81,13 +102,14 @@ async function positionsListEvm(req, res) {
       if (item2) {
         const change = item2?.usd_price - item?.currentPrice;
         const percentageChange = (change / item?.currentPrice) * 100;
+        const durationCount = timeDifferenceFromNow(item?.createdAt);
         mergedData.push({
           tokenAddress: item?.tokenAddress,
           qty: item2?.balance_formatted,
           value_in_usd: item2?.usd_value,
           price_at_invested: item?.currentPrice,
           symbol: item2?.symbol,
-          name:item2?.name,
+          name: item2?.name,
           percentage_of_growth: percentageChange.toFixed(3),
           currentPrice: item2?.usd_price,
           usd_price_24hr_percent_change: item2?.usd_price_24hr_percent_change,
@@ -95,17 +117,17 @@ async function positionsListEvm(req, res) {
           usd_value_24hr_usd_change: item2?.usd_value_24hr_usd_change,
           total_supply: item2?.total_supply_formatted,
           portfolio_percentage: item2?.portfolio_percentage,
+          duration: durationCount,
         });
       }
     });
-    console.log("🚀 ~ returnres.status ~ mergedData:", mergedData);
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "Positions fetch!!",
       data: {
         tokensData: mergedData,
-        nativeToken: balancesOfEvm[0]
+        nativeToken: balancesOfEvm[0],
       },
     });
   } catch (error) {
@@ -167,7 +189,7 @@ async function positionsListForSolana(req, res) {
     // step 1 convert all token balances into map
     const map = new Map();
     response?.raw?.tokens?.forEach((item) => map.set(item?.mint, item));
-// console.log("-------------------------->",map)
+    // console.log("-------------------------->",map)
     // find all tokens price
     let allTokenPrice = await Promise.all(
       dataBaseTokens?.map(async (item) => {
@@ -193,6 +215,7 @@ async function positionsListForSolana(req, res) {
           const change =
             tokenPriceResponse?.data?.data?.price - item?.currentPrice;
           const percentageChange = (change / item?.currentPrice) * 100;
+          const durationCount = await timeDifferenceFromNow(item?.createdAt);
           return {
             address: item?.tokenAddress,
             price_at_invested: item?.currentPrice,
@@ -201,6 +224,7 @@ async function positionsListForSolana(req, res) {
             ...tokenBalance,
             ...info?.data?.data,
             market_cap,
+            duration: durationCount,
           };
         } catch (error) {
           console.error(
@@ -218,12 +242,15 @@ async function positionsListForSolana(req, res) {
         "x-api-key": process.env.DEXTOOLAPIKEY,
       },
     });
-console.log("----------->",allTokenPrice)
+    console.log("----------->", allTokenPrice);
     return res.status(HTTP.SUCCESS).send({
       status: true,
       code: HTTP.SUCCESS,
       message: "Position fetched!!",
-      data: { allTokenPrice, solanaInfo:tokenPriceResponse?.data?.data?.price },
+      data: {
+        allTokenPrice,
+        solanaInfo: tokenPriceResponse?.data?.data?.price,
+      },
     });
   } catch (error) {
     console.log("🚀 ~ positionsListForSolana ~ error:", error?.message);
@@ -274,10 +301,10 @@ async function getPositionSingleTokenInfoSol(req, res) {
 }
 async function getPositionSingleTokenInfoEvm(req, res) {
   try {
-    const { token, chatId, email,chainId} = req?.body;
-    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chatId:", chatId)
-    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ token:", token)
-    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chainId:", chainId)
+    const { token, chatId, email, chainId } = req?.body;
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chatId:", chatId);
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ token:", token);
+    console.log("🚀 ~ getPositionSingleTokenInfoEvm ~ chainId:", chainId);
 
     // find wallet details
     const walletDetails =
@@ -313,4 +340,9 @@ async function getPositionSingleTokenInfoEvm(req, res) {
   }
 }
 
-module.exports = { positionsListEvm, positionsListForSolana, getPositionSingleTokenInfoSol, getPositionSingleTokenInfoEvm };
+module.exports = {
+  positionsListEvm,
+  positionsListForSolana,
+  getPositionSingleTokenInfoSol,
+  getPositionSingleTokenInfoEvm,
+};

@@ -1847,7 +1847,7 @@ function getRandomImageFile(dir) {
   return path.join(dir, randomFile);
 }
 
-async function addTextsToImage(imagePath, referralId, { name, percent, time, percentColor }) {
+async function addTextsToImage(imagePath, referralId, userName, { name, percent, time, percentColor }) {
   try {
     const qrCodeFolder = path.join(__dirname, "..", "..", "public", "qrcodes");
     // Ensure the folder exists
@@ -1859,7 +1859,7 @@ async function addTextsToImage(imagePath, referralId, { name, percent, time, per
     await new Promise((resolve, reject) => {
       QRCode.toFile(
         qrCodeFilePath,
-        `${process.env.REFCARDLINK}?start=rc_${referralId}`,
+        `${process.env.REFCARDLINK}?start=rs_${referralId}`,
         {
           color: {
             dark: "#000000",
@@ -1881,7 +1881,7 @@ async function addTextsToImage(imagePath, referralId, { name, percent, time, per
     ctx.drawImage(image, 0, 0);
 
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, "rgba(0, 0, 0, 0.5)");
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0.1)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1890,20 +1890,21 @@ async function addTextsToImage(imagePath, referralId, { name, percent, time, per
       {
         text: name,
         color: "#04D9FF",
-        font: "bold 50px 'Montserrat', sans-serif",
+        font: "bold 44px 'Merriweather', sans-serif",
         outline: true,
       },
       {
         text: percent,
         color: percentColor,
-        font: "bold 79px 'Montserrat', sans-serif",
+        font: "bold 83px 'Merriweather', sans-serif",
         glow: percentColor === "#39FF14" || percentColor === "#e20000",
         glowColor: percentColor === "#39FF14" ? "rgba(0, 255, 0, 0.7)" : "rgba(226, 0, 0, 0.7)",
       },
       {
         text: `🕐 ${time}`,
         color: "#04D9FF",
-        font: "bold 40px 'Montserrat', sans-serif",
+        font: "plain 30px 'Merriweather', sans-serif",
+        outline: true,
       },
     ];
 
@@ -1915,8 +1916,8 @@ async function addTextsToImage(imagePath, referralId, { name, percent, time, per
       ctx.textAlign = "left";
 
       if (outline) {
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2.4;
+        ctx.strokeStyle = "#9320f7"; //"#000"; // "#04D9";
         ctx.strokeText(text, 50, startY);
       }
 
@@ -1932,14 +1933,49 @@ async function addTextsToImage(imagePath, referralId, { name, percent, time, per
         ctx.shadowBlur = 0;
       }
 
-      startY += index === texts.length - 2 ? 75 : 100;
+      startY += index === texts.length - 2 ? 65 : 100;
     });
 
     const qrImage = await loadImage(qrCodeFilePath);
     const qrSize = 141;
-    const margin = 18.5;
+    const qrMargin = 18.5;
+    const textMargin = 20;
+    const textYOffset = 60;
 
-    ctx.drawImage(qrImage, margin, canvas.height - qrSize - margin, qrSize, qrSize);
+    ctx.drawImage(qrImage, qrMargin, canvas.height - qrSize - qrMargin, qrSize, qrSize);
+
+    // adding the text beside the QR code
+    const qrCodeX = qrMargin + qrSize + textMargin;
+    const qrCodeY = canvas.height - qrSize - qrMargin + textYOffset; // lower the text by textYOffset
+    const qrCodeText = "Sign up now for 10% off transaction fees!";
+    const highlightText = "10%";
+
+    // draw the entire text with the specified color for "10%"
+    ctx.font = "bold 24px 'Merriweather', sans-serif";
+    ctx.textAlign = "left";
+
+    const textParts = qrCodeText.split(highlightText);
+    ctx.fillStyle = "white";
+    ctx.fillText(textParts[0], qrCodeX, qrCodeY + 25);
+
+    ctx.fillStyle = "#04D9FF";
+    ctx.fillText(highlightText, qrCodeX + ctx.measureText(textParts[0]).width, qrCodeY + 25);
+
+    ctx.fillStyle = "white";
+    ctx.fillText(textParts[1], qrCodeX + ctx.measureText(textParts[0] + highlightText).width, qrCodeY + 25);
+
+    // Adding the username below the QR code text
+    const sanitizedUserName = userName.replace(/\s+/g, ""); // Remove all spaces from the userName
+    const userNameText = `@${sanitizedUserName}`;
+    const userNameFont = "bold 24px 'Merriweather', sans-serif"; //Trebuchet MS
+    const userNameColor = "#04D9FF";
+
+    ctx.font = userNameFont;
+    ctx.fillStyle = userNameColor;
+    const userNameX = qrCodeX; // align with the QR code text
+    const userNameY = qrCodeY + 30 + 40; // adjust vertical position below the QR code text
+
+    ctx.fillText(userNameText, userNameX, userNameY);
 
     fs.unlink(qrCodeFilePath, (err) => {
       if (err) console.error(`Error deleting QR code file: ${err.message}`);
@@ -1966,7 +2002,9 @@ const referralCard = async (req, res) => {
 
   const walletInfo = chatId ? await getWalletInfo(chatId) : null;
   const referralId = walletInfo ? walletInfo.referralId : null;
-
+  console.log("🚀 ~ referralCard ~ referralId:", referralId);
+  const userName = walletInfo ? walletInfo.name : "";
+  console.log("🚀 ~ referralCard ~ userName:", userName);
   if (!referralId) {
     return res.status(HTTP.BAD_REQUEST).send({
       status: false,
@@ -1975,10 +2013,8 @@ const referralCard = async (req, res) => {
     });
   }
 
-  // const referralId = user.referralId;
-
   const percentValue = parseFloat(percent.replace(/[^0-9.-]/g, ""));
-  const isLoss = percentValue < 0;
+  const isLoss = parseFloat(percentValue) < 0;
   const percentColor = isLoss ? "#e20000" : "#39FF14";
 
   const publicDir = path.resolve(__dirname, "../..", "public");
@@ -1986,7 +2022,12 @@ const referralCard = async (req, res) => {
   const imagePath = getRandomImageFile(imageDir);
 
   try {
-    const imageBuffer = await addTextsToImage(imagePath, referralId, { name, percent, time, percentColor });
+    const imageBuffer = await addTextsToImage(imagePath, referralId, userName, {
+      name,
+      percent,
+      time,
+      percentColor,
+    });
 
     res.setHeader("Content-Type", "image/jpeg");
     res.setHeader("Content-Disposition", 'inline; filename="output-image.jpg"');
@@ -2003,72 +2044,24 @@ const referralCard = async (req, res) => {
   }
 };
 
-async function addFollow(req, res) {
-  try {
-    const addGasFeeStructure = await userModel.updateMany(
-      {},
-      {
-        $set: {
-          gasFeeStructure: {
-            solana: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            1: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            8453: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            56: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            43114: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            42161: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            250: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            137: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            10: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            59144: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-            25: {
-              gasType: "turbo",
-              customGas: 0,
-            },
-          },
-        },
-      }
-    );
-    res.send(addGasFeeStructure);
-  } catch (error) {
-    console.error("Error updating user follow:", error);
-    res.status(500).send("Internal Server Error");
-  }
-}
+// async function addFollow(req, res) {
+//   try {
+//     const addGasFeeStructure = await userModel.updateMany(
+//       {},
+//       {
+//       }
+//     );
+//     res.send(addGasFeeStructure);
+//   } catch (error) {
+//     console.error("Error updating user follow:", error);
+//     res.status(500).send("Internal Server Error");
+//   }
+// }
 
 
 module.exports = {
   transactionBoard,
-  addFollow,
+  // addFollow,
   leaderboard,
   meet,
   setgasFee,
