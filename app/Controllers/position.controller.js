@@ -118,6 +118,7 @@ async function positionsListEvm(req, res) {
           total_supply: item2?.total_supply_formatted,
           portfolio_percentage: item2?.portfolio_percentage,
           duration: durationCount,
+          chainId: chainId
         });
       }
     });

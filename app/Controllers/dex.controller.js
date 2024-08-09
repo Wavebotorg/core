@@ -9,7 +9,6 @@ async function dexapi(req, res) {
   const { token, chain, nativeToken, chatId, network } = req.body;
   console.log("🚀 ~ dexapi ~ network:", network)
   console.log("🚀 ~ dexapi ~ chain:", chain);
-  console.log("🚀 ~ dexapi ~ network:", network);
   console.log("🚀 ~ dexapi ~ token:", token);
 
   try {
@@ -117,6 +116,7 @@ async function dexapi(req, res) {
 async function dexSol(req, res) {
   try {
     const { chatId, token } = req.body;
+    console.log("🚀 ~ dexSol ~ token:", token)
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
         apiKey: process.env.PUBLIC_MORALIS_API_KEY,
